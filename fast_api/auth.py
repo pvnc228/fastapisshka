@@ -19,8 +19,23 @@ def get_db():
     finally:
         db.close()
 
+# @router.post("/register", response_model=UserResponse)
+# async def register(user: UserCreate, db: Session = Depends(get_db)):
+#     # Проверка на существующего пользователя
+#     db_user = db.query(User).filter(User.email == user.email).first()
+#     if db_user:
+#         raise HTTPException(status_code=400, detail="Email already registered")
+    
+#     # Хеширование пароля и сохранение в БД
+#     hashed_password = hash_password(user.password)
+#     new_user = User(email=user.email, hashed_password=hashed_password)
+#     db.add(new_user)
+#     db.commit()
+#     db.refresh(new_user)
+#     return new_user
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
+    
     # Проверка на существующего пользователя
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:

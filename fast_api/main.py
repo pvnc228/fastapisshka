@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from database import engine, Base, SessionLocal
 from auth import router as auth_router
-from utils import SECRET_KEY
+from utils import SECRET_KEY, ALGORITHM
 from models import User
 # Создание таблиц в БД
 Base.metadata.create_all(bind=engine)
@@ -43,7 +43,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 async def secure_data():
     return {"message": "This is protected data!"}
 
-app = FastAPI()
+
 
 # Настройка статических файлов и шаблонов
 app.mount("/static", StaticFiles(directory="static"), name="static")
