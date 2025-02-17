@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Demo</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/login" id="login-link">Login</a>
+        <a href="/register" id="register-link">Register</a>
+        <a href="/profile" id="profile-link" style="display:none;">Profile</a>
+        <button onclick="logout()" id="logout-btn" style="display:none;">Logout</button>
+    </nav>
+    <div id="content">{% block content %}{% endblock %}</div>
+    <script src="/static/script.js"></script>
+</body>
+</html>

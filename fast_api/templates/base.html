@@ -1,18 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Auth Demo</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/site_style.css') }}">
 </head>
 <body>
-    <nav>
-        <a href="/">Home</a>
-        <a href="/login" id="login-link">Login</a>
-        <a href="/register" id="register-link">Register</a>
-        <a href="/profile" id="profile-link" style="display:none;">Profile</a>
-        <button onclick="logout()" id="logout-btn" style="display:none;">Logout</button>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', path='/images/images.png') }}" alt="ЛОГОТИП">
+        </div>
+        <div class="title">СТРАХОВАЯ КОМПАНИЯ "ГЕЛИОС"</div>
+        
+        <!-- Обновленный блок авторизации -->
+        <div class="auth-box">
+            <form class="login-form" action="/login" method="POST">
+                <div class="form-group">
+                    <label for="username">Логин:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="auth-btn">Войти</button>
+                <a href="/register" class="register-link">Регистрация</a>
+            </form>
+        </div>
+    </header>
+
+    <nav class="top-menu">
+        <div class="search-bar">
+            <input type="text" placeholder="Что вы хотите найти?">
+            <button>Найти</button>
+        </div>
+        {% block tabs %}{% endblock %}
     </nav>
-    <div id="content">{% block content %}{% endblock %}</div>
-    <script src="/static/script.js"></script>
+
+    <div class="container">
+        <aside class="sidebar">
+            <a href="/">Главная</a>
+            <a href="/catalog">Каталог</a>
+            <a href="/contacts">Контакты</a>
+            <a href="/about">О нас</a>
+        </aside>
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <aside class="banners">
+            <!-- Баннеры остаются без изменений -->
+        </aside>
+    </div>
+
+    <footer>
+        <p>© 2024 Страховая компания "ГЕЛИОС". Все права защищены.</p>
+    </footer>
 </body>
 </html>
