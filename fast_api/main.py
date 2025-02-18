@@ -1,17 +1,19 @@
-from fastapi import FastAPI, Request, HTTPException, Depends, Form
+from fastapi import FastAPI, Request, HTTPException, Depends, Form, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from database import engine, Base, SessionLocal
 from auth import get_db, router as auth_router
 from utils import SECRET_KEY, ALGORITHM, verify_password, create_access_token, hash_password
-from models import User
+from models import User, Product, Cart
 from sqlalchemy.orm import Session
 from datetime import timedelta
 import datetime
 from datetime import datetime
+from sqlalchemy import or_
+
 # Создание таблиц в БД
 Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -167,3 +169,118 @@ async def logout():
     response = RedirectResponse("/", status_code=303)
     response.delete_cookie(key="access_token")
     return response
+
+@app.get("/search", response_class=HTMLResponse)
+async def search(
+    request: Request,
+    query: str = Query(None),
+    category: str = Query(None),
+    min_price: int = Query(None),
+    max_price: int = Query(None),
+    db: Session = Depends(get_db)
+):
+    # Если запрос пустой, возвращаем пустой список результатов
+    if not query:
+        return templates.TemplateResponse("search.html", {
+            "request": request,
+            "results": [],  # Пустой список
+            "query": query,
+            "category": category,
+            "min_price": min_price,
+            "max_price": max_price
+        })
+    # Базовый запрос
+    query_filter = db.query(Product)
+
+    # Фильтр по ключевым словам
+    if query:
+        query_filter = query_filter.filter(
+            or_(
+                Product.name.ilike(f"%{query}%"),
+                Product.category.ilike(f"%{query}%"),
+                Product.description.ilike(f"%{query}%")
+            )
+        )
+
+    # Фильтр по категории
+    if category:
+        query_filter = query_filter.filter(Product.category == category)
+
+    # Фильтр по цене
+    if min_price is not None:
+        query_filter = query_filter.filter(Product.price >= min_price)
+    if max_price is not None:
+        query_filter = query_filter.filter(Product.price <= max_price)
+
+    # Получаем результаты
+    results = query_filter.all()
+
+    return templates.TemplateResponse("search.html", {
+        "request": request,
+        "results": results,
+        "query": query,
+        "category": category,
+        "min_price": min_price,
+        "max_price": max_price
+    })
+@app.post("/cart/add/{product_id}")
+async def add_to_cart(
+    product_name: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not user:
+        return JSONResponse({"detail": "Необходима авторизация"}, status_code=401)
+
+  # Ищем продукт по имени
+    product = db.query(Product).filter(Product.name == product_name).first()
+    if not product:
+        return JSONResponse({"detail": "Продукт не найден"}, status_code=404)
+                            
+    cart_item = db.query(Cart).filter(
+        Cart.user_id == user.id,
+        Cart.product_id == product.id
+    ).first()
+
+    if cart_item:
+        cart_item.quantity += 1
+    else:
+        cart_item = Cart(user_id=user.id, product_id=product.id, products_name=product.name)
+        db.add(cart_item)
+    
+    db.commit()
+    return JSONResponse({"message": "Товар добавлен в корзину"})
+@app.post("/cart/remove/{product_id}")
+async def remove_from_cart(
+    product_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    cart_item = db.query(Cart).filter(
+        Cart.user_id == user.id,
+        Cart.product_id == product_id
+    ).first()
+
+    if cart_item:
+        if cart_item.quantity > 1:
+            # Если количество больше 1, уменьшаем на 1
+            cart_item.quantity -= 1
+        else:
+            # Если количество 1, удаляем продукт из корзины
+            db.delete(cart_item)
+        
+        db.commit()
+        return {"message": "Продукт удален из корзины"}
+    else:
+        raise HTTPException(status_code=404, detail="Продукт не найден в корзине")
+@app.get("/cart")
+async def view_cart(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    cart_items = db.query(Cart).filter(Cart.user_id == user.id).all()
+    return templates.TemplateResponse("cart.html", {
+        "request": Request,
+        "cart_items": cart_items,
+        "title": "Корзина"
+    })

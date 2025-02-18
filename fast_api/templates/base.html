@@ -17,7 +17,7 @@
             {% if request.cookies.get("access_token") %}
                 <!-- Форма профиля -->
                 <div class="profile-box">
-                    <p>Добро пожаловать, <strong>{{ user.email }}</strong>!</p>
+                    <p>Добро пожаловать!</p>
                     <a href="/profile" class="profile-link">Профиль</a>
                     <form action="/logout" method="POST" class="logout-form">
                         <button type="submit" class="auth-btn">Выйти</button>
@@ -44,10 +44,15 @@
     </header>
 
     <nav class="top-menu">
-        <div class="search-bar">
-            <input type="text" placeholder="Что вы хотите найти?">
-            <button>Найти</button>
+        <div class="search-container">
+            <form class="search-form" action="/search" method="GET">
+                <input type="text" name="query" placeholder="Поиск страховых продуктов..." class="search-input">
+                <button type="submit" class="search-button">
+                    <img src="{{ url_for('static', path='images/search-icon.png') }}" alt="Поиск" class="search-icon">
+                </button>
+            </form>
         </div>
+        </form>
         
             <button class="tablink" onclick="openTab(event, 'cont1')">Раздел 1</button>
             <button class="tablink" onclick="openTab(event, 'cont2')">Раздел 2</button>
@@ -99,6 +104,27 @@
         
         // Открываем первую вкладку по умолчанию
         document.getElementsByClassName("tablink")[0].click();
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        const productName = button.getAttribute('data-product-name');
+
+        fetch(`/cart/add/${encodeURIComponent(productName)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include' // Для передачи куки (если используется аутентификация)
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message); // Показать сообщение об успешном добавлении
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при добавлении товара в корзину.');
+        });
+    });
+});
         </script>
 </body>
 </html>
