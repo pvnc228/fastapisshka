@@ -35,8 +35,13 @@
             <input type="text" placeholder="Что вы хотите найти?">
             <button>Найти</button>
         </div>
-        {% block tabs %}{% endblock %}
-    </nav>
+        
+            <button class="tablink" onclick="openTab(event, 'cont1')">Раздел 1</button>
+            <button class="tablink" onclick="openTab(event, 'cont2')">Раздел 2</button>
+            <button class="tablink" onclick="openTab(event, 'cont3')">Раздел 3</button>
+        
+         <!-- {% block tabs %}{% endblock %} -->
+    </nav> 
 
     <div class="container">
         <aside class="sidebar">
@@ -45,18 +50,42 @@
             <a href="/contacts">Контакты</a>
             <a href="/about">О нас</a>
         </aside>
-
+        
         <main>
             {% block content %}{% endblock %}
         </main>
 
         <aside class="banners">
-            <!-- Баннеры остаются без изменений -->
+            <a href="https://autoins.ru/osago/"><img src="{{ url_for('static', path='/images/OCAGO.png') }}" alt="osago" class="images"></a>
+            <a href="https://www.alfastrah.ru/individuals/auto/kasko/moskva/?utm_referrer=https%3A%2F%2Fwww.google.com%2F"><img src="{{ url_for('static',path='/images/KASKO.png') }}" alt="casco" class="images"></a>
+            <a href="https://www.sravni.ru/strakhovaja-kompanija/gelios/otzyvy/"><img src="{{ url_for('static', path='/images/OTZYV.png') }}" alt="reviews" class="images"></a>
         </aside>
     </div>
 
     <footer>
         <p>© 2024 Страховая компания "ГЕЛИОС". Все права защищены.</p>
     </footer>
+    <script>
+        function openTab(evt, tabName) {
+            // Скрываем все элементы с классом "tabcontent"
+            let tabcontent = document.getElementsByClassName("tabcontent");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+        
+            // Убираем класс "active" у всех вкладок
+            let tablinks = document.getElementsByClassName("tablink");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+        
+            // Отображаем текущую вкладку и добавляем "active" к кнопке
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        
+        // Открываем первую вкладку по умолчанию
+        document.getElementsByClassName("tablink")[0].click();
+        </script>
 </body>
 </html>

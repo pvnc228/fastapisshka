@@ -84,9 +84,9 @@ async def about(request: Request):
 async def home(request: Request):
     return templates.TemplateResponse("base.html", {"request": request})
 
-# @app.get("/login", response_class=HTMLResponse)
-# async def login_page(request: Request):
-#     return templates.TemplateResponse("login.html", {"request": request})
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
@@ -130,6 +130,6 @@ async def login(
     # Если всё успешно, перенаправляем на главную страницу
     return RedirectResponse("/", status_code=303)
 
-@app.get("/register")
-async def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+# @app.get("/register")
+# async def register_page(request: Request):
+#     return templates.TemplateResponse("register.html", {"request": request})
