@@ -13,21 +13,34 @@
         </div>
         <div class="title">СТРАХОВАЯ КОМПАНИЯ "ГЕЛИОС"</div>
         
-        <!-- Обновленный блок авторизации -->
         <div class="auth-box">
-            <form class="login-form" action="/login" method="POST">
-                <div class="form-group">
-                    <label for="username">Логин:</label>
-                    <input type="text" id="username" name="username" required>
+            {% if request.cookies.get("access_token") %}
+                <!-- Форма профиля -->
+                <div class="profile-box">
+                    <p>Добро пожаловать, <strong>{{ user.email }}</strong>!</p>
+                    <a href="/profile" class="profile-link">Профиль</a>
+                    <form action="/logout" method="POST" class="logout-form">
+                        <button type="submit" class="auth-btn">Выйти</button>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <label for="password">Пароль:</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <button type="submit" class="auth-btn">Войти</button>
-                <a href="/register" class="register-link">Регистрация</a>
-            </form>
+            {% else %}
+                <!-- Форма входа -->
+                <form class="login-form" action="/login" method="POST">
+                    <div class="form-group">
+                        <label for="username">Логин:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Пароль:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="auth-btn">Войти</button>
+                    <a href="/register" class="register-link">Регистрация</a>
+                </form>
+            {% endif %}
         </div>
+        </div>
+        
     </header>
 
     <nav class="top-menu">

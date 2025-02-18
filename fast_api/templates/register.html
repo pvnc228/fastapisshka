@@ -1,13 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="auth-form">
-    <h2>Register</h2>
-    <form onsubmit="register(event)">
-        <input type="email" id="register-email" placeholder="Email" required>
-        <input type="password" id="register-password" placeholder="Password" required>
-        <button type="submit">Register</button>
+<div class="register-container">
+    <h2>Регистрация</h2>
+    
+    <form class="register-form" action="/register" method="POST">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="auth-btn">Зарегистрироваться</button>
     </form>
-    <div id="register-error" class="error-message"></div>
+
+    <p>Уже есть аккаунт? <a href="/">Войдите</a></p>
 </div>
 {% endblock %}
