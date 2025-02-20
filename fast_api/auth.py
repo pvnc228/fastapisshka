@@ -47,6 +47,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    print("auth.py is used")
     return new_user
 
 @router.post("/login", response_model=Token)
@@ -64,4 +65,5 @@ async def login(user: UserCreate, db: Session = Depends(get_db)):
         data={"sub": db_user.email},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
+    print("auth.py is used")
     return {"access_token": access_token, "token_type": "bearer"}

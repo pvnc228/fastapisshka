@@ -17,7 +17,7 @@ from sqlalchemy import or_
 # Создание таблиц в БД
 Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-
+print(type(oauth2_scheme))
 app = FastAPI()
 
 app.include_router(auth_router)
@@ -36,21 +36,24 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    if jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) is None :
-        print("key is null")
+    print(jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]))
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
+            print ("email is None")
             raise credentials_exception
     except JWTError:
+        print("jwt error")
         raise credentials_exception
     
     db = SessionLocal()
     user = db.query(User).filter(User.email == email).first()
-    print(f"user - {user}")
+    
     if user is None:
+        print("user is None")
         raise credentials_exception
+    print(f"user is current: {user.email}")
     return user
 
 # Защищенный эндпоинт для примера
