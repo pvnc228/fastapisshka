@@ -740,3 +740,75 @@ footer {
 .apply-filters-btn:hover {
     background: #ff6f00;
 }
+/* Стили для неактивных вкладок */
+.disabled-tab {
+    background-color: #cccccc !important;
+    color: #666666 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+}
+
+/* Отключение hover-эффекта для неактивных */
+.disabled-tab:hover {
+    background-color: #cccccc !important;
+}
+/* Стили для отладочной секции */
+.debug-section {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.debug-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.debug-btn:hover {
+    background-color: #218838;
+}
+
+/* Стили для таблицы отладки */
+.debug-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.debug-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.debug-table th, .debug-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.debug-table th {
+    background-color: #f8f9fa;
+}
+
+.back-btn {
+    display: inline-block;
+    margin-top: 20px;
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+    background-color: #0056b3;
+}

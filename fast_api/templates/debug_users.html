@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="debug-container">
+    <h2>Список пользователей</h2>
+    <table class="debug-table">
+        <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Роль</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="/" class="back-btn">На главную</a>
+</div>
+{% endblock %}

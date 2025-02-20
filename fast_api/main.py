@@ -21,12 +21,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 app = FastAPI()
 
 app.include_router(auth_router)
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# def get_db():
+#     db = SessionLocal()
+#     try:
+#         yield db
+#     finally:
+#         db.close()
 
 
 # Добавьте в зависимости
@@ -36,6 +36,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) is None :
+        print("key is null")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
@@ -46,6 +48,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     
     db = SessionLocal()
     user = db.query(User).filter(User.email == email).first()
+    print(f"user - {user}")
     if user is None:
         raise credentials_exception
     return user
@@ -75,7 +78,8 @@ async def index(request: Request):
 async def catalog(request: Request):
     return templates.TemplateResponse("page1.html", {
         "request": request,
-        "title": "Каталог услуг"
+        "title": "Каталог услуг"# ,
+        # "is_catalog_page": True
     })
 
 @app.get("/contacts")
@@ -128,7 +132,13 @@ async def register(
     # Создаем JWT-токен для автоматического входа после регистрации
     access_token = create_access_token(data={"sub": new_user.email})
     response = RedirectResponse("/", status_code=303)
-    response.set_cookie(key="access_token", value=access_token, httponly=True)
+    response.set_cookie(
+    key="access_token",
+    value=access_token,
+    httponly=True,
+    secure=True,  # Только для HTTPS
+    samesite="Lax"
+)
     return response
 
 # Новый эндпоинт
@@ -223,7 +233,7 @@ async def search(
         "min_price": min_price,
         "max_price": max_price
     })
-@app.post("/cart/add/{product_id}")
+@app.post("/cart/add/{product_name}")
 async def add_to_cart(
     product_name: int,
     user: User = Depends(get_current_user),
@@ -250,7 +260,7 @@ async def add_to_cart(
     
     db.commit()
     return JSONResponse({"message": "Товар добавлен в корзину"})
-@app.post("/cart/remove/{product_id}")
+@app.post("/cart/remove/{product_name}")
 async def remove_from_cart(
     product_id: int,
     user: User = Depends(get_current_user),
@@ -283,4 +293,15 @@ async def view_cart(
         "request": Request,
         "cart_items": cart_items,
         "title": "Корзина"
+    })
+#TODO: DELETE DEBUG SECTIONS
+@app.get("/debug/users", response_class=HTMLResponse)
+async def debug_users(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    users = db.query(User).all()
+    return templates.TemplateResponse("debug_users.html", {
+        "request": request,
+        "users": users
     })
