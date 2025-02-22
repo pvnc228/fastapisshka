@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Depends, Form, Query
+from fastapi import FastAPI, Request, HTTPException, Depends, Form, Query, Cookie
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -16,7 +16,7 @@ from sqlalchemy import or_
 
 # Создание таблиц в БД
 Base.metadata.create_all(bind=engine)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 print(type(oauth2_scheme))
 app = FastAPI()
 
@@ -30,30 +30,28 @@ app.include_router(auth_router)
 
 
 # Добавьте в зависимости
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Cookie(None, alias="access_token")):
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    print(jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]))
+    print("token is ", jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]))
+    if token is None:
+        raise credentials_exception
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
-            print ("email is None")
             raise credentials_exception
     except JWTError:
-        print("jwt error")
         raise credentials_exception
     
     db = SessionLocal()
     user = db.query(User).filter(User.email == email).first()
-    
     if user is None:
-        print("user is None")
         raise credentials_exception
-    print(f"user is current: {user.email}")
     return user
 
 # Защищенный эндпоинт для примера
@@ -70,7 +68,7 @@ templates = Jinja2Templates(directory="templates")
 # Ваши существующие эндпоинты API...
 @app.get("/")
 async def index(request: Request):
-    user = get_current_user(request)
+    user =  get_current_user(request)
     return templates.TemplateResponse("index.html", {
         "request": request,
         "title": "Главная страница",
@@ -100,8 +98,11 @@ async def about(request: Request):
     })
 # Добавляем роуты для HTML страниц
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("base.html", {"request": request})
+async def home(request: Request, db: Session = Depends(get_db)):
+    cart_count = 0
+    if request.user.is_authenticated:
+        cart_count = db.query(Cart).filter_by(user_id=request.user.id).count()
+    return templates.TemplateResponse("base.html", {"request": request, "cart_items_count": cart_count})
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -238,7 +239,7 @@ async def search(
     })
 @app.post("/cart/add/{product_name}")
 async def add_to_cart(
-    product_name: int,
+    product_name: str,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -262,7 +263,9 @@ async def add_to_cart(
         db.add(cart_item)
     
     db.commit()
-    return JSONResponse({"message": "Товар добавлен в корзину"})
+    response = RedirectResponse("/", status_code=303)
+    return response
+    # return JSONResponse({"message": "Товар добавлен в корзину"})
 @app.post("/cart/remove/{product_name}")
 async def remove_from_cart(
     product_id: int,

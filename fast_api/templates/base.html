@@ -15,6 +15,14 @@
         
         <div class="auth-box">
             {% if request.cookies.get("access_token") %}
+            <div class="cart-icon-container">
+                <a href="/cart" class="cart-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    {% if cart_items_count %}
+                        <span class="cart-counter">{{ cart_items_count }}</span>
+                    {% endif %}
+                </a>
+            </div>
                 <!-- Форма профиля -->
                 <div class="profile-box">
                     <p>Добро пожаловать!</p>

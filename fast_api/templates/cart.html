@@ -11,7 +11,7 @@
             <h3>{{ item.product.name }}</h3>
             <p>Количество: {{ item.quantity }}</p>
             <p>Цена: {{ item.product.price * item.quantity }} руб.</p>
-            <form action="/cart/remove/{{ item.product_id }}" method="POST">
+            <form action="/cart/remove/{{ item.product_name }}" method="POST">
                 <button type="submit" class="remove-from-cart-btn">Удалить</button>
             </form>
         </div>

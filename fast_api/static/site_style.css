@@ -812,3 +812,27 @@ footer {
 .back-btn:hover {
     background-color: #0056b3;
 }
+/* Стили для корзины */
+.cart-icon-container {
+    position: relative;
+    margin-right: 20px;
+}
+
+.cart-link {
+    color: #333;
+    font-size: 24px;
+    text-decoration: none;
+    position: relative;
+}
+
+.cart-counter {
+    position: absolute;
+    top: -10px;
+    right: -15px;
+    background: #ff4500;
+    color: white;
+    border-radius: 50%;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: bold;
+}
