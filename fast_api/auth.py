@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import User
-from schemas import UserCreate, UserResponse, Token
+from schemas import UserCreate, UserResponse, Token, EditEmailRequest, EditPasswordRequest
 from utils import hash_password, verify_password, create_access_token
 from datetime import timedelta
+
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Токен будет действителен 30 минут
 
@@ -19,20 +20,6 @@ def get_db():
     finally:
         db.close()
 
-# @router.post("/register", response_model=UserResponse)
-# async def register(user: UserCreate, db: Session = Depends(get_db)):
-#     # Проверка на существующего пользователя
-#     db_user = db.query(User).filter(User.email == user.email).first()
-#     if db_user:
-#         raise HTTPException(status_code=400, detail="Email already registered")
-    
-#     # Хеширование пароля и сохранение в БД
-#     hashed_password = hash_password(user.password)
-#     new_user = User(email=user.email, hashed_password=hashed_password)
-#     db.add(new_user)
-#     db.commit()
-#     db.refresh(new_user)
-#     return new_user
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
     
@@ -67,3 +54,4 @@ async def login(user: UserCreate, db: Session = Depends(get_db)):
     )
     print("auth.py is used")
     return {"access_token": access_token, "token_type": "bearer"}
+

@@ -1,0 +1,21 @@
+{% if cart_items %}
+<div class="cart-items">
+    {% for item in cart_items %}
+    <div class="cart-item">
+        <h3>{{ item.product.name }}</h3>
+        <p>Количество: {{ item.quantity }}</p>
+        <p>Цена: {{ item.product.price * item.quantity }} руб.</p>
+        <button class="remove-from-cart-btn" 
+                data-product-name="{{ item.product.name }}">
+            Удалить
+        </button>
+    </div>
+    {% endfor %}
+</div>
+<div class="cart-total">
+    <p>Итого: {{ total_price }} руб.</p>
+    <button class="checkout-btn">Оформить заказ</button>
+</div>
+{% else %}
+<p>Ваша корзина пуста.</p>
+{% endif %}

@@ -4,25 +4,38 @@
 <div class="cart-container">
     <h2>Ваша корзина</h2>
     
-    {% if cart_items %}
-    <div class="cart-items">
-        {% for item in cart_items %}
-        <div class="cart-item">
-            <h3>{{ item.product.name }}</h3>
-            <p>Количество: {{ item.quantity }}</p>
-            <p>Цена: {{ item.product.price * item.quantity }} руб.</p>
-            <form action="/cart/remove/{{ item.product_name }}" method="POST">
-                <button type="submit" class="remove-from-cart-btn">Удалить</button>
-            </form>
-        </div>
-        {% endfor %}
+    <div id="cart-content">
+        {% include 'partials/_cart_items.html' %}
     </div>
-    <div class="cart-total">
-        <p>Итого: {{ total_price }} руб.</p>
-        <button class="checkout-btn">Оформить заказ</button>
-    </div>
-    {% else %}
-    <p>Ваша корзина пуста.</p>
-    {% endif %}
 </div>
+
+<script>
+// Функция для обновления содержимого корзины
+async function updateCart() {
+    const response = await fetch('/cart');
+    const html = await response.text();
+    document.getElementById('cart-content').innerHTML = html;
+}
+
+// Обработчик для кнопок удаления
+document.getElementById('cart-content').addEventListener('click', async (e) => {
+    if (e.target.classList.contains('remove-from-cart-btn')) {
+        const productName = e.target.dataset.productName;
+        
+        try {
+            const response = await fetch(`/cart/remove/${encodeURIComponent(productName)}`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                await updateCart();
+                updateCartCounter( {{ cart_items_count }} - 1);
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+        }
+    }
+});
+</script>
 {% endblock %}

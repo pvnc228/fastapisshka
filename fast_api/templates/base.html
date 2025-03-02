@@ -112,6 +112,40 @@
         
         // Открываем первую вкладку по умолчанию
         document.getElementsByClassName("tablink")[0].click();
+        function updateCartCounter(count) {
+    const counter = document.querySelector('.cart-counter');
+    if (counter) counter.textContent = count;
+}
+
+// Обработчик для всех кнопок "Добавить в корзину"
+document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('add-to-cart-btn')) {
+        e.preventDefault();
+        const productName = e.target.dataset.productName;
+        
+        try {
+            const response = await fetch(`/cart/add/${encodeURIComponent(productName)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                updateCartCounter(data.cart_items_count);
+                alert(`Товар "${productName}" добавлен в корзину!`);
+            } else {
+                alert(`Ошибка: ${data.detail}`);
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при добавлении товара');
+        }
+    }
+});
 //      </script>
 </body>
 </html>

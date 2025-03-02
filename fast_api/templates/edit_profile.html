@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="edit-profile-container">
+    <h2>Редактирование профиля</h2>
+    
+    <!-- Форма для изменения email -->
+    <form id="edit-email-form" class="edit-form">
+        <h3>Изменить Email</h3>
+        <div class="form-group">
+            <label for="new-email">Новый Email:</label>
+            <input type="email" id="new-email" name="new_email" required>
+        </div>
+        <div class="form-group">
+            <label for="password-email">Текущий пароль:</label>
+            <input type="password" id="password-email" name="password" required>
+        </div>
+        <button type="submit" class="submit-btn">Изменить Email</button>
+    </form>
+
+    <!-- Форма для изменения пароля -->
+    <form id="edit-password-form" class="edit-form">
+        <h3>Изменить Пароль</h3>
+        <div class="form-group">
+            <label for="current-password">Текущий пароль:</label>
+            <input type="password" id="current-password" name="current_password" required>
+        </div>
+        <div class="form-group">
+            <label for="new-password">Новый пароль:</label>
+            <input type="password" id="new-password" name="new_password" required>
+        </div>
+        <div class="form-group">
+            <label for="confirm-password">Подтвердите новый пароль:</label>
+            <input type="password" id="confirm-password" name="confirm_password" required>
+        </div>
+        <button type="submit" class="submit-btn">Изменить Пароль</button>
+    </form>
+</div>
+
+<script>
+    // JavaScript для отправки данных на сервер
+    document.getElementById("edit-email-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = {
+            new_email: formData.get("new_email"),
+            password: formData.get("password")
+        };
+
+        try {
+            const response = await fetch("/edit-profile/email", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("access_token")}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert("Email успешно изменен!");
+            } else {
+                const errorData = await response.json();
+                alert(`Ошибка: ${errorData.detail}`);
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Произошла ошибка при изменении email.");
+        }
+    });
+
+    document.getElementById("edit-password-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = {
+            current_password: formData.get("current_password"),
+            new_password: formData.get("new_password"),
+            confirm_password: formData.get("confirm_password")
+        };
+
+        try {
+            const response = await fetch("/edit-profile/password", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("access_token")}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert("Пароль успешно изменен!");
+            } else {
+                const errorData = await response.json();
+                alert(`Ошибка: ${errorData.detail}`);
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Произошла ошибка при изменении пароля.");
+        }
+    });
+</script>
+{% endblock %}

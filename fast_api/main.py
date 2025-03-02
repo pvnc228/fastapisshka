@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from database import engine, Base, SessionLocal
+from schemas import UserCreate, UserResponse, Token, EditEmailRequest, EditPasswordRequest
 from auth import get_db, router as auth_router
 from utils import SECRET_KEY, ALGORITHM, verify_password, create_access_token, hash_password
 from models import User, Product, Cart
@@ -21,12 +22,7 @@ print(type(oauth2_scheme))
 app = FastAPI()
 
 app.include_router(auth_router)
-# def get_db():
-#     db = SessionLocal()
-#     try:
-#         yield db
-#     finally:
-#         db.close()
+
 
 
 # Добавьте в зависимости
@@ -54,10 +50,6 @@ async def get_current_user(token: str = Cookie(None, alias="access_token")):
         raise credentials_exception
     return user
 
-# Защищенный эндпоинт для примера
-@app.get("/secure-data", dependencies=[Depends(oauth2_scheme)])
-async def secure_data():
-    return {"message": "This is protected data!"}
 
 
 
@@ -144,11 +136,6 @@ async def register(
     samesite="Lax"
 )
     return response
-
-# Новый эндпоинт
-@app.get("/users/me")
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return {"email": current_user.email}
 
 
 @app.post("/login")
@@ -239,6 +226,7 @@ async def search(
     })
 @app.post("/cart/add/{product_name}")
 async def add_to_cart(
+    request: Request,
     product_name: str,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -253,19 +241,22 @@ async def add_to_cart(
                             
     cart_item = db.query(Cart).filter(
         Cart.user_id == user.id,
-        Cart.product_id == product.id
+        Cart.product_id == product.id,
+        Cart.products_name==product.name
     ).first()
-
-    if cart_item:
-        cart_item.quantity += 1
-    else:
-        cart_item = Cart(user_id=user.id, product_id=product.id, products_name=product.name)
-        db.add(cart_item)
+    cart_items_count = 0
+    if request.user.is_authenticated:
+        cart_items_count = db.query(Cart).filter_by(user_id=request.user.id).count()
+    
+    cart_item = Cart(user_id=user.id, product_id=product.id, products_name=product.name)
+    db.add(cart_item)
     
     db.commit()
-    response = RedirectResponse("/", status_code=303)
-    return response
-    # return JSONResponse({"message": "Товар добавлен в корзину"})
+    
+    return {
+        "message": "Товар добавлен",
+        "cart_items_count": cart_items_count
+    }
 @app.post("/cart/remove/{product_name}")
 async def remove_from_cart(
     product_id: int,
@@ -310,4 +301,52 @@ async def debug_users(
     return templates.TemplateResponse("debug_users.html", {
         "request": request,
         "users": users
+    })
+@app.post("/edit-profile/email")
+async def edit_email(
+    request: EditEmailRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Проверка текущего пароля
+    if not verify_password(request.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Неверный пароль")
+
+    # Проверка, существует ли новый email
+    existing_user = db.query(User).filter(User.email == request.new_email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
+
+    # Обновление email
+    user.email = request.new_email
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "Email успешно изменен"}
+@app.post("/edit-profile/password")
+async def edit_password(
+    request: EditPasswordRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Проверка текущего пароля
+    if not verify_password(request.current_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Неверный пароль")
+
+    # Проверка совпадения нового пароля и подтверждения
+    if request.new_password != request.confirm_password:
+        raise HTTPException(status_code=400, detail="Пароли не совпадают")
+
+    # Хеширование нового пароля
+    user.hashed_password = hash_password(request.new_password)
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "Пароль успешно изменен"}
+
+@app.get("/edit-profile/")
+async def edit_profile(request: Request, user: User = Depends(get_current_user),
+    ):
+    return templates.TemplateResponse("edit_profile.html", {
+        "request": request
     })
