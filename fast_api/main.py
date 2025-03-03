@@ -26,13 +26,14 @@ app.include_router(auth_router)
 
 
 # Добавьте в зависимости
-async def get_current_user(token: str = Cookie(None, alias="access_token")):
+async def get_current_user(token: str = Cookie(None, alias="access_token"),
+    db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    print("token is ", jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]))
+    # print("token is ", jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]))
     if token is None:
         raise credentials_exception
 
@@ -44,7 +45,7 @@ async def get_current_user(token: str = Cookie(None, alias="access_token")):
     except JWTError:
         raise credentials_exception
     
-    db = SessionLocal()
+    
     user = db.query(User).filter(User.email == email).first()
     if user is None:
         raise credentials_exception
@@ -90,11 +91,10 @@ async def about(request: Request):
     })
 # Добавляем роуты для HTML страниц
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request, db: Session = Depends(get_db)):
-    cart_count = 0
-    if request.user.is_authenticated:
-        cart_count = db.query(Cart).filter_by(user_id=request.user.id).count()
+async def home(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    cart_count = db.query(Cart).filter_by(user_id=user.id).count()
     return templates.TemplateResponse("base.html", {"request": request, "cart_items_count": cart_count})
+
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -154,7 +154,7 @@ async def login(
     
     access_token = create_access_token(data={"sub": user.email})
     response = RedirectResponse("/", status_code=303)
-    response.set_cookie(key="access_token", value=access_token, httponly=True)
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="Lax")
     return response
 
 @app.get("/profile")
@@ -244,22 +244,21 @@ async def add_to_cart(
         Cart.product_id == product.id,
         Cart.products_name==product.name
     ).first()
-    cart_items_count = 0
-    if request.user.is_authenticated:
-        cart_items_count = db.query(Cart).filter_by(user_id=request.user.id).count()
     
-    cart_item = Cart(user_id=user.id, product_id=product.id, products_name=product.name)
-    db.add(cart_item)
     
-    db.commit()
+    
+    if not cart_item:
+        cart_item = Cart(user_id=user.id, product_id=product.id, products_name=product.name)
+        db.add(cart_item)
+        db.commit()
     
     return {
         "message": "Товар добавлен",
-        "cart_items_count": cart_items_count
+        "cart_items_count": db.query(Cart).filter_by(user_id=user.id).count()
     }
 @app.post("/cart/remove/{product_name}")
 async def remove_from_cart(
-    product_id: int,
+    product_id: str,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -281,13 +280,13 @@ async def remove_from_cart(
     else:
         raise HTTPException(status_code=404, detail="Продукт не найден в корзине")
 @app.get("/cart")
-async def view_cart(
+async def view_cart(request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     cart_items = db.query(Cart).filter(Cart.user_id == user.id).all()
     return templates.TemplateResponse("cart.html", {
-        "request": Request,
+        "request": request,
         "cart_items": cart_items,
         "title": "Корзина"
     })

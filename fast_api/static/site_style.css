@@ -905,3 +905,17 @@ footer {
 .submit-btn:hover {
     background-color: #218838;
 }
+.cart-view-btn {
+    display: inline-block;
+    background-color: #ff7f00; /* Оранжевый цвет */
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px; /* Скругленные углы */
+    text-decoration: none;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.cart-view-btn:hover {
+    background-color: #e67600; /* Темнее при наведении */
+}
