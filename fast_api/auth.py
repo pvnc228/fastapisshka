@@ -30,7 +30,12 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     
     # Хеширование пароля и сохранение в БД
     hashed_password = hash_password(user.password)
-    new_user = User(email=user.email, hashed_password=hashed_password)
+    new_user = User(email=user.email, 
+                    hashed_password=hashed_password, 
+                    full_name=user.full_name,  # Новое поле
+                    phone_number=user.phone_number,  # Новое поле
+                    date_of_birth=user.date_of_birth
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

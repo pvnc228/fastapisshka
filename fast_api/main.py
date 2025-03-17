@@ -25,7 +25,7 @@ app.include_router(auth_router)
 
 
 
-# Добавьте в зависимости
+
 async def get_current_user(token: str = Cookie(None, alias="access_token"),
     db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -52,7 +52,38 @@ async def get_current_user(token: str = Cookie(None, alias="access_token"),
     return user
 
 
+async def get_current_profile(
+    token: str = Cookie(None, alias="access_token"),
+    db: Session = Depends(get_db)
+) -> UserResponse:  # Указываем тип возвращаемого значения
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    if token is None:
+        raise credentials_exception
 
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise credentials_exception
+    
+    # Возвращаем объект UserResponse с новыми полями
+    return UserResponse(
+        email=user.email,
+        full_name=user.full_name,
+        phone_number=user.phone_number,
+        date_of_birth=user.date_of_birth
+    )
 
 # Настройка статических файлов и шаблонов
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -157,8 +188,8 @@ async def login(
     response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="Lax")
     return response
 
-@app.get("/profile")
-async def profile(request: Request, user: User = Depends(get_current_user)):
+@app.get("/profile", response_model=UserResponse)
+async def profile(request: Request, user: UserResponse = Depends(get_current_profile)):
     return templates.TemplateResponse("profile.html", {
         "request": request,
         "title": "Профиль",
@@ -258,13 +289,13 @@ async def add_to_cart(
     }
 @app.post("/cart/remove/{product_name}")
 async def remove_from_cart(
-    product_id: str,
+    product_name: str,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     cart_item = db.query(Cart).filter(
         Cart.user_id == user.id,
-        Cart.product_id == product_id
+        Cart.products_name==product_name
     ).first()
 
     if cart_item:

@@ -110,15 +110,16 @@
             // Отображаем текущую вкладку и добавляем "active" к кнопке
             document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
+            
         }
         
         // Открываем первую вкладку по умолчанию
         document.getElementsByClassName("tablink")[0].click();
-        function updateCartCounter(count) {
-    const counter = document.querySelector('.cart-counter');
-    if (counter) counter.textContent = count;
-}
+        
 
+function updateCartCounter(count) {
+    const counter = document.querySelector('.cart-counter');
+    if (counter) counter.textContent = count;}
 // Обработчик для всех кнопок "Добавить в корзину"
 document.addEventListener('click', async (e) => {
     if (e.target.classList.contains('add-to-cart-btn')) {
@@ -148,6 +149,11 @@ document.addEventListener('click', async (e) => {
         }
     }
 });
-//      </script>
+
+    document.getElementById('checkout-btn').addEventListener('click', function() {
+    alert("Это только тест. Заказ невозможен.");
+    });
+
+    </script>
 </body>
 </html>

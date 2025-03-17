@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean, Date
 from sqlalchemy.orm import Session, relationship
 from database import Base
 from utils import hash_password
@@ -21,15 +21,11 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+    full_name = Column(String, nullable=True)  # Новое поле: ФИО
+    phone_number = Column(String, nullable=True)  # Новое поле: номер телефона
+    date_of_birth = Column(Date, nullable=True)  # Новое поле: дата рождения
     cart = relationship("Cart", back_populates="user")
-    # @staticmethod
-    # def create_user(db: Session, email: str, password: str):
-    #     hashed_password = hash_password(password)
-    #     user = User(email=email, hashed_password=hashed_password)
-    #     db.add(user)
-    #     db.commit()
-    #     db.refresh(user)
-    #     return user
+    
 
 class Product(Base):
     __tablename__ = "products"

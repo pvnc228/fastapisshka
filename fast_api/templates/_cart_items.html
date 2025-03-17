@@ -1,5 +1,7 @@
+
 {% if cart_items %}
 <div class="cart-items">
+    {% set total_price = 0 %}  {# Инициализируем переменную для общей суммы #}
     {% for item in cart_items %}
     <div class="cart-item">
         <h3>{{ item.product.name }}</h3>
@@ -9,13 +11,15 @@
                 data-product-name="{{ item.product.name }}">
             Удалить
         </button>
+        {% set total_price = total_price + (item.product.price * item.quantity) %}  {# Считаем общую сумму #}
     </div>
     {% endfor %}
 </div>
 <div class="cart-total">
-    <p>Итого: {{ total_price }} руб.</p>
+    <p>Итого: {{ total_price }} руб.</p>  {# Выводим общую сумму #}
     <button class="checkout-btn">Оформить заказ</button>
 </div>
 {% else %}
 <p>Ваша корзина пуста.</p>
+
 {% endif %}
