@@ -10,33 +10,31 @@
 </div>
 
 <script>
-// Функция для обновления содержимого корзины
-async function updateCart() {
-    const response = await fetch('/cart');
-    const html = await response.text();
-    document.getElementById('cart-content').innerHTML = html;
-}
-
-// Обработчик для кнопок удаления
-document.getElementById('cart-content').addEventListener('click', async (e) => {
-    if (e.target.classList.contains('remove-from-cart-btn')) {
-        const productName = e.target.dataset.productName;
-        
-        try {
-            const response = await fetch(`/cart/remove/${encodeURIComponent(productName)}`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                await updateCart();
-                updateCartCounter( {{ cart_items_count }} - 1);
-            }
-        } catch (error) {
-            console.error('Ошибка:', error);
-        }
+    async function updateCart() {
+        const response = await fetch('/_cart_items', {
+            credentials: 'include'  
+        });
+        const html = await response.text();
+        document.getElementById('cart-content').innerHTML = html;
     }
-});
-
-</script>
+    
+    document.getElementById('cart-content').addEventListener('click', async (e) => {
+        if (e.target.classList.contains('remove-from-cart-btn')) {
+            const productName = e.target.dataset.productName;
+            
+            try {
+                const response = await fetch(`/cart/remove/${encodeURIComponent(productName)}`, {
+                    method: 'POST',
+                    credentials: 'include'  
+                });
+    
+                if (response.ok) {
+                    await updateCart();  
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+    });
+    </script>
 {% endblock %}

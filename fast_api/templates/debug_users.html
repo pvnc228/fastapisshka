@@ -7,16 +7,63 @@
         <tr>
             <th>ID</th>
             <th>Email</th>
-            <th>Роль</th>
+            <th>ФИО</th>
+            <th>Телефон</th>
         </tr>
         {% for user in users %}
         <tr>
             <td>{{ user.id }}</td>
             <td>{{ user.email }}</td>
-            <td>{{ user.role }}</td>
+            <td>{{ user.full_name }}</td>
+            <td>{{ user.phone_number }}</td>
         </tr>
         {% endfor %}
     </table>
+
+    <!-- Кнопка для удаления всех пользователей, кроме активного -->
+    <button id="delete-users-btn" class="delete-btn">Удалить всех пользователей, кроме активного</button>
+
     <a href="/" class="back-btn">На главную</a>
 </div>
+
+<script>
+// Обработчик для кнопки удаления
+document.getElementById('delete-users-btn').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/debug/delete-users', {
+            method: 'POST',
+            credentials: 'include',  // Для передачи куки (если требуется авторизация)
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (response.ok) {
+            alert("Все пользователи, кроме активного, успешно удалены.");
+            window.location.reload();  // Перезагружаем страницу для обновления списка
+        } else {
+            alert("Ошибка при удалении пользователей.");
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert("Произошла ошибка при отправке запроса.");
+    }
+});
+</script>
+
+<style>
+.delete-btn {
+    padding: 10px 20px;
+    background-color: #dc3545;  /* Красный цвет */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;  /* Темнее красный */
+}
+</style>
 {% endblock %}

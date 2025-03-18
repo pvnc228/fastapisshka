@@ -10,30 +10,20 @@ from auth import get_db, router as auth_router
 from utils import SECRET_KEY, ALGORITHM, verify_password, create_access_token, hash_password
 from models import User, Product, Cart
 from sqlalchemy.orm import Session
-from datetime import timedelta
-import datetime
-from datetime import datetime
+from datetime import timedelta, datetime
 from sqlalchemy import or_
 
-# Создание таблиц в БД
 Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-print(type(oauth2_scheme))
 app = FastAPI()
-
 app.include_router(auth_router)
 
-
-
-
-async def get_current_user(token: str = Cookie(None, alias="access_token"),
-    db: Session = Depends(get_db)):
+async def get_current_user(token: str = Cookie(None, alias="access_token"), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    # print("token is ", jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]))
     if token is None:
         raise credentials_exception
 
@@ -44,24 +34,18 @@ async def get_current_user(token: str = Cookie(None, alias="access_token"),
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
-    
+
     user = db.query(User).filter(User.email == email).first()
     if user is None:
         raise credentials_exception
     return user
 
-
-async def get_current_profile(
-    token: str = Cookie(None, alias="access_token"),
-    db: Session = Depends(get_db)
-) -> UserResponse:  # Указываем тип возвращаемого значения
+async def get_current_profile(token: str = Cookie(None, alias="access_token"), db: Session = Depends(get_db)) -> UserResponse:
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
     if token is None:
         raise credentials_exception
 
@@ -72,12 +56,11 @@ async def get_current_profile(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.email == email).first()
     if user is None:
         raise credentials_exception
-    
-    # Возвращаем объект UserResponse с новыми полями
+
     return UserResponse(
         email=user.email,
         full_name=user.full_name,
@@ -85,14 +68,12 @@ async def get_current_profile(
         date_of_birth=user.date_of_birth
     )
 
-# Настройка статических файлов и шаблонов
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Ваши существующие эндпоинты API...
 @app.get("/")
 async def index(request: Request):
-    user =  get_current_user(request)
+    user = get_current_user(request)
     return templates.TemplateResponse("index.html", {
         "request": request,
         "title": "Главная страница",
@@ -103,8 +84,7 @@ async def index(request: Request):
 async def catalog(request: Request):
     return templates.TemplateResponse("page1.html", {
         "request": request,
-        "title": "Каталог услуг"# ,
-        # "is_catalog_page": True
+        "title": "Каталог услуг"
     })
 
 @app.get("/contacts")
@@ -120,16 +100,15 @@ async def about(request: Request):
         "request": request,
         "title": "О компании"
     })
-# Добавляем роуты для HTML страниц
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     cart_count = db.query(Cart).filter_by(user_id=user.id).count()
     return templates.TemplateResponse("base.html", {"request": request, "cart_items_count": cart_count})
 
-
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-     return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
@@ -140,34 +119,44 @@ async def register(
     request: Request,
     email: str = Form(...),
     password: str = Form(...),
+    full_name: str = Form(None),
+    phone_number: str = Form(None),
+    date_of_birth: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    # Проверяем, существует ли пользователь с таким email
     existing_user = db.query(User).filter(User.email == email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
-    
-    # Хешируем пароль
+
     hashed_password = hash_password(password)
-    
-    # Создаем нового пользователя
-    new_user = User(email=email, hashed_password=hashed_password)
+    dob = None
+    if date_of_birth:
+        try:
+            dob = datetime.strptime(date_of_birth, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Некорректный формат даты рождения. Используйте YYYY-MM-DD.")
+
+    new_user = User(
+        email=email,
+        hashed_password=hashed_password,
+        full_name=full_name,
+        phone_number=phone_number,
+        date_of_birth=dob
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
-    # Создаем JWT-токен для автоматического входа после регистрации
+
     access_token = create_access_token(data={"sub": new_user.email})
     response = RedirectResponse("/", status_code=303)
     response.set_cookie(
-    key="access_token",
-    value=access_token,
-    httponly=True,
-    secure=True,  # Только для HTTPS
-    samesite="Lax"
-)
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="Lax"
+    )
     return response
-
 
 @app.post("/login")
 async def login(
@@ -179,10 +168,10 @@ async def login(
     user = db.query(User).filter(User.email == username).first()
     if not user:
         raise HTTPException(status_code=400, detail="Пользователь не найден")
-    
+
     if not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Неверный пароль")
-    
+
     access_token = create_access_token(data={"sub": user.email})
     response = RedirectResponse("/", status_code=303)
     response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="Lax")
@@ -211,20 +200,18 @@ async def search(
     max_price: int = Query(None),
     db: Session = Depends(get_db)
 ):
-    # Если запрос пустой, возвращаем пустой список результатов
     if not query:
         return templates.TemplateResponse("search.html", {
             "request": request,
-            "results": [],  # Пустой список
+            "results": [],
             "query": query,
             "category": category,
             "min_price": min_price,
             "max_price": max_price
         })
-    # Базовый запрос
+
     query_filter = db.query(Product)
 
-    # Фильтр по ключевым словам
     if query:
         query_filter = query_filter.filter(
             or_(
@@ -234,17 +221,14 @@ async def search(
             )
         )
 
-    # Фильтр по категории
     if category:
         query_filter = query_filter.filter(Product.category == category)
 
-    # Фильтр по цене
     if min_price is not None:
         query_filter = query_filter.filter(Product.price >= min_price)
     if max_price is not None:
         query_filter = query_filter.filter(Product.price <= max_price)
 
-    # Получаем результаты
     results = query_filter.all()
 
     return templates.TemplateResponse("search.html", {
@@ -255,6 +239,7 @@ async def search(
         "min_price": min_price,
         "max_price": max_price
     })
+
 @app.post("/cart/add/{product_name}")
 async def add_to_cart(
     request: Request,
@@ -265,28 +250,26 @@ async def add_to_cart(
     if not user:
         return JSONResponse({"detail": "Необходима авторизация"}, status_code=401)
 
-  # Ищем продукт по имени
     product = db.query(Product).filter(Product.name == product_name).first()
     if not product:
         return JSONResponse({"detail": "Продукт не найден"}, status_code=404)
-                            
+
     cart_item = db.query(Cart).filter(
         Cart.user_id == user.id,
         Cart.product_id == product.id,
-        Cart.products_name==product.name
+        Cart.products_name == product.name
     ).first()
-    
-    
-    
+
     if not cart_item:
         cart_item = Cart(user_id=user.id, product_id=product.id, products_name=product.name)
         db.add(cart_item)
         db.commit()
-    
+
     return {
         "message": "Товар добавлен",
         "cart_items_count": db.query(Cart).filter_by(user_id=user.id).count()
     }
+
 @app.post("/cart/remove/{product_name}")
 async def remove_from_cart(
     product_name: str,
@@ -295,79 +278,67 @@ async def remove_from_cart(
 ):
     cart_item = db.query(Cart).filter(
         Cart.user_id == user.id,
-        Cart.products_name==product_name
+        Cart.products_name == product_name
     ).first()
 
     if cart_item:
         if cart_item.quantity > 1:
-            # Если количество больше 1, уменьшаем на 1
             cart_item.quantity -= 1
         else:
-            # Если количество 1, удаляем продукт из корзины
             db.delete(cart_item)
-        
         db.commit()
         return {"message": "Продукт удален из корзины"}
     else:
         raise HTTPException(status_code=404, detail="Продукт не найден в корзине")
+
 @app.get("/cart")
-async def view_cart(request: Request,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    cart_items = db.query(Cart).filter(Cart.user_id == user.id).all()
+async def view_cart(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    cart_items = db.query(Cart).join(Product).filter(Cart.user_id == user.id).all()
     return templates.TemplateResponse("cart.html", {
         "request": request,
         "cart_items": cart_items,
         "title": "Корзина"
     })
-#TODO: DELETE DEBUG SECTIONS
+
 @app.get("/debug/users", response_class=HTMLResponse)
-async def debug_users(
-    request: Request,
-    db: Session = Depends(get_db)
-):
+async def debug_users(request: Request, db: Session = Depends(get_db)):
     users = db.query(User).all()
     return templates.TemplateResponse("debug_users.html", {
         "request": request,
         "users": users
     })
+
 @app.post("/edit-profile/email")
 async def edit_email(
     request: EditEmailRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Проверка текущего пароля
     if not verify_password(request.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Неверный пароль")
 
-    # Проверка, существует ли новый email
     existing_user = db.query(User).filter(User.email == request.new_email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
 
-    # Обновление email
     user.email = request.new_email
     db.commit()
     db.refresh(user)
 
     return {"message": "Email успешно изменен"}
+
 @app.post("/edit-profile/password")
 async def edit_password(
     request: EditPasswordRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Проверка текущего пароля
     if not verify_password(request.current_password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Неверный пароль")
 
-    # Проверка совпадения нового пароля и подтверждения
     if request.new_password != request.confirm_password:
         raise HTTPException(status_code=400, detail="Пароли не совпадают")
 
-    # Хеширование нового пароля
     user.hashed_password = hash_password(request.new_password)
     db.commit()
     db.refresh(user)
@@ -375,8 +346,28 @@ async def edit_password(
     return {"message": "Пароль успешно изменен"}
 
 @app.get("/edit-profile/")
-async def edit_profile(request: Request, user: User = Depends(get_current_user),
-    ):
+async def edit_profile(request: Request):
     return templates.TemplateResponse("edit_profile.html", {
         "request": request
     })
+
+@app.get("/_cart_items", response_class=HTMLResponse)
+async def get_cart_items(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    cart_items = db.query(Cart).filter(Cart.user_id == user.id).all()
+    return templates.TemplateResponse("_cart_items.html", {
+        "request": request,
+        "cart_items": cart_items
+    })
+
+@app.post("/debug/delete-users")
+async def delete_all_users_except_current(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db.query(User).filter(User.id != user.id).delete()
+    db.commit()
+    return {"message": "Все пользователи, кроме активного, удалены."}
