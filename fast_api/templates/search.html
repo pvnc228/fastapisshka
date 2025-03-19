@@ -3,8 +3,6 @@
 {% block content %}
 <div class="search-results">
     <h2>Результаты поиска для "{{ query }}"</h2>
-    
-    <!-- Форма фильтров -->
     <form class="filters-form" method="GET" action="/search">
         <input type="hidden" name="query" value="{{ query }}">
         
@@ -32,7 +30,6 @@
         <button type="submit" class="apply-filters-btn">Применить фильтры</button>
     </form>
     
-    <!-- Результаты поиска -->
     {% if results %}
     <div class="product-list">
         {% for product in results %}

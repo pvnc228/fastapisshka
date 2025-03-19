@@ -4,7 +4,6 @@
 <div class="edit-profile-container">
     <h2>Редактирование профиля</h2>
     
-    <!-- Форма для изменения email -->
     <form id="edit-email-form" class="edit-form">
         <h3>Изменить Email</h3>
         <div class="form-group">
@@ -18,7 +17,6 @@
         <button type="submit" class="submit-btn">Изменить Email</button>
     </form>
 
-    <!-- Форма для изменения пароля -->
     <form id="edit-password-form" class="edit-form">
         <h3>Изменить Пароль</h3>
         <div class="form-group">
@@ -38,7 +36,6 @@
 </div>
 
 <script>
-    // JavaScript для отправки данных на сервер
     document.getElementById("edit-email-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);

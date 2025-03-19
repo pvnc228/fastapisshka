@@ -23,7 +23,6 @@
                     {% endif %}
                 </a>
             </div>
-                <!-- Форма профиля -->
                 <div class="profile-box">
                     
                     <p>Добро пожаловать!</p>
@@ -34,7 +33,6 @@
                     </form>
                 </div>
             {% else %}
-                <!-- Форма входа -->
                 <form class="login-form" action="/login" method="POST">
                     <div class="form-group">
                         <label for="username">Логин:</label>
@@ -67,8 +65,6 @@
             <button class="tablink" onclick="openTab(event, 'cont1')">Авто до 20 лет</button>
             <button class="tablink" onclick="openTab(event, 'cont2')">Авто до 10 лет</button>
             <button class="tablink" onclick="openTab(event, 'cont3')">Комплексные продукты</button>
-           
-         <!-- {% block tabs %}{% endblock %} -->
     </nav> 
 
     <div class="container">
@@ -95,36 +91,28 @@
     </footer>
     <script>
         function openTab(evt, tabName) {
-            // Скрываем все элементы с классом "tabcontent"
             let tabcontent = document.getElementsByClassName("tabcontent");
             for (let i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";
             }
-        
-            // Убираем класс "active" у всех вкладок
             let tablinks = document.getElementsByClassName("tablink");
             for (let i = 0; i < tablinks.length; i++) {
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
             }
-        
-            // Отображаем текущую вкладку и добавляем "active" к кнопке
             document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
             
         }
-        
-        // Открываем первую вкладку по умолчанию
         document.getElementsByClassName("tablink")[0].click();
         
 
-function updateCartCounter(count) {
-    const counter = document.querySelector('.cart-counter');
-    if (counter) counter.textContent = count;}
-// Обработчик для всех кнопок "Добавить в корзину"
-document.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('add-to-cart-btn')) {
-        e.preventDefault();
-        const productName = e.target.dataset.productName;
+    function updateCartCounter(count) {
+        const counter = document.querySelector('.cart-counter');
+        if (counter) counter.textContent = count;}
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('add-to-cart-btn')) {
+            e.preventDefault();
+            const productName = e.target.dataset.productName;
         
         try {
             const response = await fetch(`/cart/add/${encodeURIComponent(productName)}`, {
@@ -153,7 +141,6 @@ document.addEventListener('click', async (e) => {
     document.getElementById('checkout-btn').addEventListener('click', function() {
     alert("Это только тест. Заказ невозможен.");
     });
-
     </script>
 </body>
 </html>

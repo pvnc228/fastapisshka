@@ -19,20 +19,17 @@
         </tr>
         {% endfor %}
     </table>
-
-    <!-- Кнопка для удаления всех пользователей, кроме активного -->
     <button id="delete-users-btn" class="delete-btn">Удалить всех пользователей, кроме активного</button>
 
     <a href="/" class="back-btn">На главную</a>
 </div>
 
 <script>
-// Обработчик для кнопки удаления
 document.getElementById('delete-users-btn').addEventListener('click', async () => {
     try {
         const response = await fetch('/debug/delete-users', {
             method: 'POST',
-            credentials: 'include',  // Для передачи куки (если требуется авторизация)
+            credentials: 'include',  
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -40,7 +37,7 @@ document.getElementById('delete-users-btn').addEventListener('click', async () =
 
         if (response.ok) {
             alert("Все пользователи, кроме активного, успешно удалены.");
-            window.location.reload();  // Перезагружаем страницу для обновления списка
+            window.location.reload();  
         } else {
             alert("Ошибка при удалении пользователей.");
         }
@@ -54,7 +51,7 @@ document.getElementById('delete-users-btn').addEventListener('click', async () =
 <style>
 .delete-btn {
     padding: 10px 20px;
-    background-color: #dc3545;  /* Красный цвет */
+    background-color: #dc3545;  
     color: white;
     border: none;
     border-radius: 5px;
@@ -63,7 +60,7 @@ document.getElementById('delete-users-btn').addEventListener('click', async () =
 }
 
 .delete-btn:hover {
-    background-color: #c82333;  /* Темнее красный */
+    background-color: #c82333;  
 }
 </style>
 {% endblock %}
