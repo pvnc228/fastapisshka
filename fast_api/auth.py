@@ -7,8 +7,7 @@ from utils import hash_password, verify_password, create_access_token
 from datetime import timedelta
 
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Токен будет действителен 30 минут
-
+ACCESS_TOKEN_EXPIRE_MINUTES = 30  
 expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -23,17 +22,15 @@ def get_db():
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
     
-    # Проверка на существующего пользователя
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Хеширование пароля и сохранение в БД
     hashed_password = hash_password(user.password)
     new_user = User(email=user.email, 
                     hashed_password=hashed_password, 
-                    full_name=user.full_name,  # Новое поле
-                    phone_number=user.phone_number,  # Новое поле
+                    full_name=user.full_name,  
+                    phone_number=user.phone_number,  
                     date_of_birth=user.date_of_birth
     )
     db.add(new_user)
@@ -44,7 +41,6 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 async def login(user: UserCreate, db: Session = Depends(get_db)):
-    # Проверка учетных данных
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(
@@ -52,7 +48,6 @@ async def login(user: UserCreate, db: Session = Depends(get_db)):
             detail="Incorrect email or password"
         )
     
-    # Генерация токена
     access_token = create_access_token(
         data={"sub": db_user.email},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

@@ -919,3 +919,11 @@ footer {
 .cart-view-btn:hover {
     background-color: #e67600; /* Темнее при наведении */
 }
+
+.form-group a {
+    color: #007bff;
+    text-decoration: underline;
+}
+.form-group a:hover {
+    color: #0056b3;
+}

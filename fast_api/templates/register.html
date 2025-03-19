@@ -27,7 +27,12 @@
         </div>
         <button type="submit" class="auth-btn">Зарегистрироваться</button>
     </form>
-
+    <div class="form-group">
+        <input type="checkbox" id="privacy_policy" name="privacy_policy" required>
+        <label for="privacy_policy">
+            Я согласен с <a href="{{ url_for('static', path='/polit/polit.pdf') }}" target="_blank">политикой конфиденциальности</a>
+        </label>
+    </div>
     <p>Уже есть аккаунт? <a href="/">Войдите</a></p>
 </div>
 {% endblock %}
