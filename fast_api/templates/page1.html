@@ -4,7 +4,7 @@
 
     
     <h2 >ПРОДУКТЫ</h2>
-                 <div id="cont1" class="tabcontent">
+                 <!-- <div id="cont1" class="tabcontent">
                     <div class="card-container">
                         <div class="card">
                         <div class="card-image">
@@ -172,7 +172,112 @@
                     </div>
                      </div>
                 </div>
+            </div> -->
+            <!-- Контент вкладок -->
+    <div id="cont1" class="tabcontent">
+        <div class="card-container">
+            {% for product in products[:2] %}
+            <div class="card">
+                <div class="card-image">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                </div>
+                <div class="card-content">
+                    <h3>{{ product.name }}</h3>
+                    <ul>
+                        <li>Категория: {{ product.category }}</li>
+                        <li>Страховая сумма: {{ product.insurance_amount }} ₽</li>
+                        <li>Срок страхования: {{ product.insurance_duration }}</li>
+                        <li>Стоимость полиса: {{ product.policy_cost }} ₽</li>
+                        <li>Риски: {{ product.risks }}</li>
+                        <li>Условия оплаты: {{ product.payment_conditions }}</li>
+                        <li>Клиентский сервис 24/7: {{ '✔' if product.client_service_24_7 else '✖' }}</li>
+                        <li>Аварийный комиссар: {{ '✔' if product.emergency_commissioner else '✖' }}</li>
+                        <li>Эвакуатор: {{ '✔' if product.tow_truck else '✖' }}</li>
+                        <li>Форма возмещения: {{ product.compensation_form }}</li>
+                    </ul>
+                </div>
+                <div class="product-actions">
+                    <a href="/catalog/{{ product.id }}" class="details-btn">Подробнее</a>
+                    <form action="/cart/add/{{ product.name }}" method="POST">
+                        <button class="add-to-cart-btn" data-product-name="{{ product.name }}">
+                            Добавить в корзину
+                        </button>
+                    </form>
+                </div>
             </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="cont2" class="tabcontent">
+        <div class="card-container">
+            {% for product in products[2:4] %}
+            <div class="card">
+                <div class="card-image">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                </div>
+                <div class="card-content">
+                    <h3>{{ product.name }}</h3>
+                    <ul>
+                        <li>Категория: {{ product.category }}</li>
+                        <li>Страховая сумма: {{ product.insurance_amount }} ₽</li>
+                        <li>Срок страхования: {{ product.insurance_duration }}</li>
+                        <li>Стоимость полиса: {{ product.policy_cost }} ₽</li>
+                        <li>Риски: {{ product.risks }}</li>
+                        <li>Условия оплаты: {{ product.payment_conditions }}</li>
+                        <li>Клиентский сервис 24/7: {{ '✔' if product.client_service_24_7 else '✖' }}</li>
+                        <li>Аварийный комиссар: {{ '✔' if product.emergency_commissioner else '✖' }}</li>
+                        <li>Эвакуатор: {{ '✔' if product.tow_truck else '✖' }}</li>
+                        <li>Форма возмещения: {{ product.compensation_form }}</li>
+                    </ul>
+                </div>
+                <div class="product-actions">
+                    <a href="/catalog/{{ product.id }}" class="details-btn">Подробнее</a>
+                    <form action="/cart/add/{{ product.name }}" method="POST">
+                        <button class="add-to-cart-btn" data-product-name="{{ product.name }}">
+                            Добавить в корзину
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="cont3" class="tabcontent">
+        <div class="card-container">
+            {% for product in products[4:6] %}
+            <div class="card">
+                <div class="card-image">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                </div>
+                <div class="card-content">
+                    <h3>{{ product.name }}</h3>
+                    <ul>
+                        <li>Категория: {{ product.category }}</li>
+                        <li>Страховая сумма: {{ product.insurance_amount }} ₽</li>
+                        <li>Срок страхования: {{ product.insurance_duration }}</li>
+                        <li>Стоимость полиса: {{ product.policy_cost }} ₽</li>
+                        <li>Риски: {{ product.risks }}</li>
+                        <li>Условия оплаты: {{ product.payment_conditions }}</li>
+                        <li>Клиентский сервис 24/7: {{ '✔' if product.client_service_24_7 else '✖' }}</li>
+                        <li>Аварийный комиссар: {{ '✔' if product.emergency_commissioner else '✖' }}</li>
+                        <li>Эвакуатор: {{ '✔' if product.tow_truck else '✖' }}</li>
+                        <li>Форма возмещения: {{ product.compensation_form }}</li>
+                    </ul>
+                </div>
+                <div class="product-actions">
+                    <a href="/catalog/{{ product.id }}" class="details-btn">Подробнее</a>
+                    <form action="/cart/add/{{ product.name }}" method="POST">
+                        <button class="add-to-cart-btn" data-product-name="{{ product.name }}">
+                            Добавить в корзину
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
             
 
 {% endblock %}

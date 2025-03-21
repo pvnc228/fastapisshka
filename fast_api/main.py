@@ -8,7 +8,7 @@ from database import engine, Base, SessionLocal
 from schemas import UserCreate, UserResponse, Token, EditEmailRequest, EditPasswordRequest
 from auth import get_db, router as auth_router
 from utils import SECRET_KEY, ALGORITHM, verify_password, create_access_token, hash_password
-from models import User, Product, Cart
+from models import Review, User, Product, Cart
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 from sqlalchemy import or_
@@ -81,10 +81,18 @@ async def index(request: Request):
     })
 
 @app.get("/catalog")
-async def catalog(request: Request):
+async def catalog(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # Получаем все продукты из базы данных
+    products = db.query(Product).all()
+    
+    # Передаем продукты в шаблон
     return templates.TemplateResponse("page1.html", {
         "request": request,
-        "title": "Каталог услуг"
+        "title": "Каталог услуг",
+        "products": products  # Передаем список продуктов
     })
 
 @app.get("/contacts")
@@ -371,3 +379,64 @@ async def delete_all_users_except_current(
     db.query(User).filter(User.id != user.id).delete()
     db.commit()
     return {"message": "Все пользователи, кроме активного, удалены."}
+@app.post("/reviews/add")
+async def add_review(
+    product_id: int = Form(...),
+    text: str = Form(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    new_review = Review(
+        text=text,
+        user_id=user.id,
+        product_id=product_id
+    )
+    db.add(new_review)
+    db.commit()
+    return RedirectResponse(f"/product/{product_id}", status_code=303)
+@app.get("/catalog/{product_id}", response_class=HTMLResponse)
+async def product_page(
+    request: Request,
+    product_id: int,
+    db: Session = Depends(get_db)
+):
+    # Получаем товар из базы данных по его ID
+    product = db.query(Product).filter(Product.id == product_id).first()
+    
+    # Если товар не найден, возвращаем ошибку 404
+    if not product:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+
+    # Возвращаем шаблон с данными о товаре
+    return templates.TemplateResponse("product.html", {
+        "request": request,
+        "product": product
+    })
+@app.post("/submit-review")
+async def submit_review(
+    request: Request,
+    product_id: int = Form(...),  # ID товара, к которому относится отзыв
+    author: str = Form(...),      # Имя автора отзыва
+    text: str = Form(...),        # Текст отзыва,        # Текст отзыва
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Проверяем, существует ли товар с таким ID
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+
+    # Создаем новый отзыв
+    new_review = Review(
+        user_id=user.id,
+        product_id=product_id,
+        author=author,
+        text=text
+    )
+
+    # Сохраняем отзыв в базе данных
+    db.add(new_review)
+    db.commit()
+
+    # Перенаправляем пользователя обратно на страницу товара
+    return RedirectResponse(url=f"/catalog/{product_id}", status_code=303)
