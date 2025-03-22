@@ -1,3 +1,4 @@
+import re
 from fastapi import FastAPI, Request, HTTPException, Depends, Form, Query, Cookie
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -17,15 +18,26 @@ Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 app = FastAPI()
 app.include_router(auth_router)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+# Регулярка для разрешенных символов (только буквы, цифры, пробелы и дефисы)
+SAFE_SEARCH_PATTERN = re.compile(r'^[a-zA-Zа-яА-Я0-9\s\-]{1,100}$')
 
-async def get_current_user(token: str = Cookie(None, alias="access_token"), db: Session = Depends(get_db)):
+# Запрещенные SQL-ключевые слова
+BLACKLISTED_KEYWORDS = [
+    "drop", "delete", "insert", "update", "truncate",
+    "alter", "create", "grant", "revoke", "shutdown"
+]
+
+async def get_current_user(request: Request, token: str = Cookie(None, alias="access_token"), db: Session = Depends(get_db) ):
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    if token is None:
-        raise credentials_exception
+    if token is None:   
+        return RedirectResponse(url="/login", status_code=303)
+
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -33,7 +45,8 @@ async def get_current_user(token: str = Cookie(None, alias="access_token"), db: 
         if email is None:
             raise credentials_exception
     except JWTError:
-        raise credentials_exception
+        return RedirectResponse(url="/login", status_code=303)
+
 
     user = db.query(User).filter(User.email == email).first()
     if user is None:
@@ -68,16 +81,20 @@ async def get_current_profile(token: str = Cookie(None, alias="access_token"), d
         date_of_birth=user.date_of_birth
     )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+
 
 @app.get("/")
-async def index(request: Request):
-    user = get_current_user(request)
+async def index(request: Request,
+    db: Session = Depends(get_db), 
+    user = Depends(get_current_user)):
+    products = db.query(Product).limit(6).all()
+    
     return templates.TemplateResponse("index.html", {
         "request": request,
         "title": "Главная страница",
-        "user": user
+        "user": user,
+        "products": products,
+        "show_slider": True
     })
 
 @app.get("/catalog")
@@ -99,28 +116,35 @@ async def catalog(
 async def contacts(request: Request):
     return templates.TemplateResponse("page2.html", {
         "request": request,
-        "title": "Контакты"
+        "title": "Контакты",
+        "show_slider": False 
     })
 
 @app.get("/about")
 async def about(request: Request):
     return templates.TemplateResponse("page3.html", {
         "request": request,
-        "title": "О компании"
+        "title": "О компании",
+        "show_slider": False 
     })
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    cart_count = db.query(Cart).filter_by(user_id=user.id).count()
-    return templates.TemplateResponse("base.html", {"request": request, "cart_items_count": cart_count})
+    
+    return templates.TemplateResponse("base.html", {
+        "request": request,
+        "show_slider": True
+        })
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("login.html", {"request": request,
+        "show_slider": False })
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse("register.html", {"request": request,
+        "show_slider": False })
 
 @app.post("/register")
 async def register(
@@ -190,7 +214,8 @@ async def profile(request: Request, user: UserResponse = Depends(get_current_pro
     return templates.TemplateResponse("profile.html", {
         "request": request,
         "title": "Профиль",
-        "user": user
+        "user": user,
+        "show_slider": False 
     })
 
 @app.post("/logout")
@@ -220,14 +245,43 @@ async def search(
 
     query_filter = db.query(Product)
 
+    # if query:
+    #     query_filter = query_filter.filter(
+    #         or_(
+    #             Product.name.ilike(f"%{query}%"),
+    #             Product.category.ilike(f"%{query}%"),
+    #             Product.description.ilike(f"%{query}%")
+    #         )
+    #     )
+    # Валидация поискового запроса
     if query:
-        query_filter = query_filter.filter(
-            or_(
-                Product.name.ilike(f"%{query}%"),
-                Product.category.ilike(f"%{query}%"),
-                Product.description.ilike(f"%{query}%")
+        # Проверка на запрещенные символы
+        if not SAFE_SEARCH_PATTERN.match(query):
+            raise HTTPException(
+                status_code=400,
+                detail="Недопустимые символы в запросе"
             )
-        )
+        
+        # Проверка на SQL-инъекции
+        query_lower = query.lower()
+        for keyword in BLACKLISTED_KEYWORDS:
+            if keyword in query_lower:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Недопустимый запрос"
+                )
+
+    # Валидация категории
+    valid_categories = ["Автострахование", "Имущество", "Комплексное страхование", "Страхование бизнеса"]
+    if category and category not in valid_categories:
+        raise HTTPException(status_code=400, detail="Недопустимая категория")
+
+    # Валидация цен
+    if min_price and min_price < 0:
+        raise HTTPException(status_code=400, detail="Минимальная цена не может быть отрицательной")
+    
+    if max_price and max_price < 0:
+        raise HTTPException(status_code=400, detail="Максимальная цена не может быть отрицательной")
 
     if category:
         query_filter = query_filter.filter(Product.category == category)
@@ -245,7 +299,8 @@ async def search(
         "query": query,
         "category": category,
         "min_price": min_price,
-        "max_price": max_price
+        "max_price": max_price,
+        "show_slider": False 
     })
 
 @app.post("/cart/add/{product_name}")
@@ -305,7 +360,8 @@ async def view_cart(request: Request, user: User = Depends(get_current_user), db
     return templates.TemplateResponse("cart.html", {
         "request": request,
         "cart_items": cart_items,
-        "title": "Корзина"
+        "title": "Корзина",
+        "show_slider": False 
     })
 
 @app.get("/debug/users", response_class=HTMLResponse)
@@ -313,7 +369,8 @@ async def debug_users(request: Request, db: Session = Depends(get_db)):
     users = db.query(User).all()
     return templates.TemplateResponse("debug_users.html", {
         "request": request,
-        "users": users
+        "users": users,
+        "show_slider": False 
     })
 
 @app.post("/edit-profile/email")
@@ -356,7 +413,8 @@ async def edit_password(
 @app.get("/edit-profile/")
 async def edit_profile(request: Request):
     return templates.TemplateResponse("edit_profile.html", {
-        "request": request
+        "request": request,
+        "show_slider": False 
     })
 
 @app.get("/_cart_items", response_class=HTMLResponse)
@@ -368,7 +426,8 @@ async def get_cart_items(
     cart_items = db.query(Cart).filter(Cart.user_id == user.id).all()
     return templates.TemplateResponse("_cart_items.html", {
         "request": request,
-        "cart_items": cart_items
+        "cart_items": cart_items,
+        "show_slider": False 
     })
 
 @app.post("/debug/delete-users")
@@ -410,7 +469,8 @@ async def product_page(
     # Возвращаем шаблон с данными о товаре
     return templates.TemplateResponse("product.html", {
         "request": request,
-        "product": product
+        "product": product,
+        "show_slider": False 
     })
 @app.post("/submit-review")
 async def submit_review(

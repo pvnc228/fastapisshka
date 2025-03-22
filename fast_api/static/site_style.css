@@ -2,20 +2,25 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
 }
 body {
-    font-family: Arial, sans-serif;
+    background-color: #f5f5f5c0;
+    color: #212121;
 }
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #ffa500;
-    padding: 10px;
-    color: #000;
+    background-color: #ff9100d2; 
+    padding: 16px;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 header .logo {
     font-weight: bold;
+
+    font-size: 20px;
 }
 header .title {
     font-size: 24px;
@@ -24,18 +29,25 @@ header .login input {
     margin: 0 5px;
 }
 .top-menu {
-    background-color: #ffa500;
-    padding: 10px;
+    background-color: #ff9100d2; 
+    padding: 12px;
     text-align: center;
     align-items: center;
 }
 .top-menu a {
-    margin: 0 10px;
-    color: #000;
+    color: #ffffff;
     text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+.top-menu a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 .container {
     display: flex;
+
+    padding: 20px;
 }
 .search-bar {
     display: flex;
@@ -43,7 +55,7 @@ header .login input {
     align-items: center;
     margin: 10px 0;
     padding: 5px;
-    background-color: #ffa500; /* Оранжевый цвет, соответствующий сайту */
+    background-color: #ff9100d2; /* Оранжевый цвет, соответствующий сайту */
     border-radius: 5px;
     width: 100%; /* Подгоняем ширину */
     max-width: auto; /* Ограничиваем максимальную ширину */
@@ -73,7 +85,7 @@ header .login input {
     background-color: #ff4500; /* Цвет при наведении */
 }
 .sidebar, .banners {
-    background-color: #ffa500;
+    background-color: #ff9100d2;
     padding: 15px;
     width: 150px;
     
@@ -87,19 +99,26 @@ header .login input {
 .sidebar a, .banners a {
     display: block;
     margin: 10px 0;
-    color: #000;
+    color: #020005;
     text-decoration: none;
+    padding: 8px;
+    border-radius: 4px;
 }
 .kontacts{
     font-size:x-large;
 }
 .sidebar a:hover{
-    background-color: #ff4500;
+    background-color: rgba(234, 74, 0, 0.432);
 }
 main {
-    flex-grow: 1;
+    /* flex-grow: 1;
     padding: 15px;
-    width: 75%;
+    width: 75%; */
+    flex-grow: 1;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 main h2 {
     color: #ff4500;
@@ -124,7 +143,7 @@ ul, ol {
     margin-bottom: 15px;
 }
 .tablink {
-    background-color: #ffa500;
+    background-color: #ff9100d2;
     color: black;
     border: none;
     padding: 10px 20px;
@@ -137,7 +156,7 @@ ul, ol {
 .tabcontent {
     display: grid;
     padding: 20px;
-    border-top: 2px solid #ffa500;
+    border-top: 2px solid #ff9100d2;
     width: 100%;
     /* justify-items: center;
     justify-content: center; */
@@ -164,12 +183,14 @@ ul, ol {
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
+    background: #ffffff;
     background-color: #f9f9f9;
     border: 1px solid #ddd;
-    border-radius: 10px;
+    border-radius: 8px;
     width: 300px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    padding: 16px;
   }
   
   .card-image img {
@@ -206,7 +227,7 @@ ul, ol {
 
 .login button {
     margin-top: 10px;
-    background-color: #ffa500;
+    background-color: #ff9100d2;
     border: 1px groove orangered;
     padding: 8px;
     cursor: pointer;
@@ -248,7 +269,8 @@ footer {
     width: 100%;
     height: 30px;
     padding: 10px 0;
-    background-color: #ffa500;
+    color: white;
+    background-color: #ff9100d2;
     text-align: center;
 }
 .container1 {
@@ -919,6 +941,19 @@ footer {
 .cart-view-btn:hover {
     background-color: #e67600; /* Темнее при наведении */
 }
+.profile-link {
+    display: inline-block;
+    background-color: #ff7f00;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+.profile-link:hover {
+    background-color: #e67600;
+}
 
 .form-group a {
     color: #007bff;
@@ -1032,3 +1067,17 @@ footer {
     color: #2e7d32;
     margin-bottom: 20px;
 }
+button {
+    background-color: #6200ea;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background-color: #3700b3;
+}
+/* Стили для слайдера в топ-меню */

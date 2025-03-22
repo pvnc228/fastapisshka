@@ -5,6 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', path='/site_style.css') }}">
+    <style>.top-menu-slider {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+        height: 200px; /* Высота слайдера */
+        background-color: #f9f9f9; /* Фон слайдера */
+    }
+    
+    .slider-container {
+        display: flex;
+        transition: transform 0.5s ease-in-out;
+    }
+    
+    .slider-item {
+        min-width: 100%;
+        position: relative;
+    }
+    
+    .slider-link {
+        display: block;
+        width: 100%;
+        height: 200px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .slider-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .slider-caption {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 10px;
+        text-align: center;
+    }
+    
+    .slider-nav {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+    }
+    
+    .slider-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .slider-dot.active {
+        background: #fff;
+    }</style>
 </head>
 <body>
     <header>
@@ -52,6 +118,24 @@
     </header>
 
     <nav class="top-menu">
+        {% if show_slider %}
+        <div class="top-menu-slider">
+            <div class="slider-container">
+                {% for product in products %}
+                <div class="slider-item">
+                    <a href="/catalog/{{ product.id }}" class="slider-link">
+                        <img src="{{ product.image_url }}" alt="{{ product.name }}" class="slider-image">
+                        <div class="slider-caption">
+                            <h3>{{ product.name }}</h3>
+                            <p>{{ product.price }} руб.</p>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="slider-nav"></div>
+        </div>
+        {% endif %}
         <div class="search-container">
             <form class="search-form" action="/search" method="GET">
                 <input type="text" name="query" placeholder="Поиск страховых продуктов..." class="search-input">
@@ -76,6 +160,8 @@
         </aside>
         
         <main>
+             
+
             {% block content %}{% endblock %}
         </main>
 
@@ -90,6 +176,7 @@
         <p>© 2024 Страховая компания "ГЕЛИОС". Все права защищены.    <a href="{{ url_for('static', path='/polit/polit.pdf') }}" target="_blank">Политика конфиденциальности</a></p>
     </footer>
     <script>
+        document.addEventListener('DOMContentLoaded', initSlider);
         function openTab(evt, tabName) {
             let tabcontent = document.getElementsByClassName("tabcontent");
             for (let i = 0; i < tabcontent.length; i++) {
@@ -141,6 +228,67 @@
     document.getElementById('checkout-btn').addEventListener('click', function() {
     alert("Это только тест. Заказ невозможен.");
     });
+    function initSlider() {
+    const slider = document.querySelector('.top-menu-slider');
+    if (!slider) return;
+
+    const container = slider.querySelector('.slider-container');
+    const items = container.children;
+    const nav = slider.querySelector('.slider-nav');
+    
+    // Создаем точки навигации
+    for (let i = 0; i < items.length; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'slider-dot' + (i === 0 ? ' active' : '');
+        dot.addEventListener('click', () => goToSlide(i));
+        nav.appendChild(dot);
+    }
+
+    let currentSlide = 0;
+    let autoSlideInterval;
+
+    function goToSlide(index) {
+        if (index < 0) {
+            // Если индекс меньше 0, переходим к последнему слайду
+            index = items.length - 1;
+        } else if (index >= items.length) {
+            // Если индекс больше или равен количеству слайдов, переходим к первому слайду
+            index = 0;
+        }
+
+        currentSlide = index;
+        container.style.transform = `translateX(-${index * 100}%)`;
+        
+        // Обновляем активные точки
+        nav.querySelectorAll('.slider-dot').forEach((dot, i) => {
+            dot.classList.toggle('active', i === index);
+        });
+    }
+
+    function nextSlide() {
+        goToSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+        goToSlide(currentSlide - 1);
+    }
+
+    // Автоматическое перелистывание
+    function startAutoSlide() {
+        autoSlideInterval = setInterval(nextSlide, 4000);
+    }
+
+    // Останавливаем при наведении
+    slider.addEventListener('mouseenter', () => clearInterval(autoSlideInterval));
+    slider.addEventListener('mouseleave', startAutoSlide);
+
+    // Инициализация
+    if (items.length > 0) {
+        startAutoSlide();
+    }
+}
+        // Инициализируем слайдер после загрузки страницы
+        
     </script>
 </body>
 </html>

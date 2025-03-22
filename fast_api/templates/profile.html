@@ -11,6 +11,9 @@
         <p><strong>Дата рождения:</strong> {{ user.date_of_birth }}</p>
     </div>
 
+    {% with reviews=user.reviews, show_delete=True %}
+        {% include "reviews_partial.html" %}
+    {% endwith %}
     
     <div class="profile-actions">
         <a href="/edit-profile" class="action-btn">Редактировать профиль</a>

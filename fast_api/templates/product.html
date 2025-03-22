@@ -19,7 +19,7 @@
             <li>Форма возмещения: {{ product.compensation_form }}</li>
         </ul>
         <div class="product-price">Цена: {{ product.policy_cost }} руб.</div>
-        <button class="add-to-cart-btn">Добавить в корзину</button>
+        <button class="add-to-cart-btn" data-product-name="{{ product.name }}">Добавить в корзину</button>
     </div>
 </div>
 
