@@ -10,20 +10,20 @@ from schemas import UserCreate, UserResponse, Token, EditEmailRequest, EditPassw
 from auth import get_db, router as auth_router
 from utils import SECRET_KEY, ALGORITHM, verify_password, create_access_token, hash_password
 from models import Review, User, Product, Cart
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import timedelta, datetime
 from sqlalchemy import or_
 from typing import List
+from werkzeug.security import check_password_hash
 Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 app = FastAPI()
 app.include_router(auth_router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-# Регулярка для разрешенных символов (только буквы, цифры, пробелы и дефисы)
+
 SAFE_SEARCH_PATTERN = re.compile(r'^[a-zA-Zа-яА-Я0-9\s\-]{1,100}$')
 
-# Запрещенные SQL-ключевые слова
 BLACKLISTED_KEYWORDS = [
     "drop", "delete", "insert", "update", "truncate",
     "alter", "create", "grant", "revoke", "shutdown"
@@ -53,7 +53,7 @@ async def get_current_user(request: Request, token: str = Cookie(None, alias="ac
         raise credentials_exception
     return user
 
-async def get_current_profile(token: str = Cookie(None, alias="access_token"), db: Session = Depends(get_db)) -> UserResponse:
+async def get_current_profile(token: str = Cookie(None, alias="access_token"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> UserResponse:
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
@@ -70,7 +70,7 @@ async def get_current_profile(token: str = Cookie(None, alias="access_token"), d
     except JWTError:
         raise credentials_exception
 
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).options(joinedload(User.reviews)).filter(User.id == current_user.id).first()
     if user is None:
         raise credentials_exception
 
@@ -102,10 +102,7 @@ async def catalog(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    # Получаем все продукты из базы данных
     products = db.query(Product).all()
-    
-    # Передаем продукты в шаблон
     return templates.TemplateResponse("page1.html", {
         "request": request,
         "title": "Каталог услуг",
@@ -248,24 +245,14 @@ async def search(
 
     query_filter = db.query(Product)
 
-    # if query:
-    #     query_filter = query_filter.filter(
-    #         or_(
-    #             Product.name.ilike(f"%{query}%"),
-    #             Product.category.ilike(f"%{query}%"),
-    #             Product.description.ilike(f"%{query}%")
-    #         )
-    #     )
-    # Валидация поискового запроса
+    
     if query:
-        # Проверка на запрещенные символы
         if not SAFE_SEARCH_PATTERN.match(query):
             raise HTTPException(
                 status_code=400,
                 detail="Недопустимые символы в запросе"
             )
         
-        # Проверка на SQL-инъекции
         query_lower = query.lower()
         for keyword in BLACKLISTED_KEYWORDS:
             if keyword in query_lower:
@@ -274,12 +261,10 @@ async def search(
                     detail="Недопустимый запрос"
                 )
 
-    # Валидация категории
     valid_categories = ["Автострахование", "Имущество", "Комплексное страхование", "Страхование бизнеса"]
     if category and category not in valid_categories:
         raise HTTPException(status_code=400, detail="Недопустимая категория")
 
-    # Валидация цен
     if min_price and min_price < 0:
         raise HTTPException(status_code=400, detail="Минимальная цена не может быть отрицательной")
     
@@ -447,9 +432,11 @@ async def edit_password(
     return {"message": "Пароль успешно изменен"}
 
 @app.get("/edit-profile/")
-async def edit_profile(request: Request):
+async def edit_profile(request: Request,
+    user: User = Depends(get_current_profile)):
     return templates.TemplateResponse("edit_profile.html", {
         "request": request,
+        "user": user,
         "show_slider": False 
     })
 
@@ -488,14 +475,11 @@ async def product_page(
     product_id: int,
     db: Session = Depends(get_db)
 ):
-    # Получаем товар из базы данных по его ID
     product = db.query(Product).filter(Product.id == product_id).first()
     
-    # Если товар не найден, возвращаем ошибку 404
     if not product:
         raise HTTPException(status_code=404, detail="Товар не найден")
 
-    # Возвращаем шаблон с данными о товаре
     return templates.TemplateResponse("product.html", {
         "request": request,
         "product": product,
@@ -504,18 +488,16 @@ async def product_page(
 @app.post("/submit-review")
 async def submit_review(
     request: Request,
-    product_id: int = Form(...),  # ID товара, к которому относится отзыв
-    author: str = Form(...),      # Имя автора отзыва
-    text: str = Form(...),        # Текст отзыва,        # Текст отзыва
+    product_id: int = Form(...),  
+    author: str = Form(...),     
+    text: str = Form(...),        
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Проверяем, существует ли товар с таким ID
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Товар не найден")
 
-    # Создаем новый отзыв
     new_review = Review(
         user_id=user.id,
         product_id=product_id,
@@ -523,14 +505,10 @@ async def submit_review(
         text=text
     )
 
-    # Сохраняем отзыв в базе данных
     db.add(new_review)
     db.commit()
-
-    # Перенаправляем пользователя обратно на страницу товара
     return RedirectResponse(url=f"/catalog/{product_id}", status_code=303)
 
-# CRUD для корзин
 @app.post("/admin/add-cart")
 async def add_cart(
     user_id: int = Form(...),
@@ -566,7 +544,6 @@ async def edit_cart(
     db.commit()
     return RedirectResponse("/admin", status_code=303)
 
-# CRUD для отзывов
 @app.post("/admin/add-review")
 async def add_review(
     author: str = Form(...),
@@ -607,17 +584,14 @@ async def admin_panel(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Проверка роли пользователя
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Доступ запрещен")
     
-    # Получение данных из базы
     users = db.query(User).all()
     products = db.query(Product).all()
     carts = db.query(Cart).all()
     reviews = db.query(Review).all()
 
-    # Возвращаем шаблон с данными
     return templates.TemplateResponse("admin.html", {
         "request": request,
         "users": users,
@@ -626,65 +600,54 @@ async def admin_panel(
         "reviews": reviews
     })
 
-# Удаление пользователя
 @app.post("/admin/delete-user/{user_id}")
 async def delete_user(
     user_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Проверка роли пользователя
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Доступ запрещен")
-    
-    # Поиск пользователя
+
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
-    
-    # Удаление пользователя
+
     db.delete(db_user)
     db.commit()
     return RedirectResponse("/admin", status_code=303)
 
-# Сброс пароля пользователя
 @app.post("/admin/reset-password/{user_id}")
 async def reset_password(
     user_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Проверка роли пользователя
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Доступ запрещен")
-    
-    # Поиск пользователя
+ 
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     
-    # Сброс пароля
+
     db_user.hashed_password = hash_password("0000")
     db.commit()
     return RedirectResponse("/admin", status_code=303)
 
-# Удаление продукта
 @app.post("/admin/delete-product/{product_id}")
 async def delete_product(
     product_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Проверка роли пользователя
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Доступ запрещен")
-    
-    # Поиск продукта
+  
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Продукт не найден")
     
-    # Удаление продукта
     db.delete(product)
     db.commit()
     return RedirectResponse("/admin", status_code=303)
@@ -698,25 +661,18 @@ async def edit_product(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # 1. Проверка прав доступа
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Доступ запрещен")
     
-    # 2. Поиск продукта в базе данных
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Продукт не найден")
     
-    # 3. Обновление данных продукта
     product.name = name
     product.category = category
     product.price = price
     product.description = description
-    
-    # 4. Сохранение изменений в базе данных
     db.commit()
-    
-    # 5. Перенаправление обратно на админ-панель
     return RedirectResponse("/admin", status_code=303)
 @app.post("/admin/add-product")
 async def add_product(
@@ -761,3 +717,24 @@ async def delete_review(
     db.delete(review)
     db.commit()
     return RedirectResponse("/admin", status_code=303)
+
+
+@app.post("/edit-profile/personal-info")
+async def edit_personal_info(
+    full_name: str = Form(...),
+    phone_number: str = Form(...),
+    date_of_birth: str = Form(...),
+    password: str = Form(...),
+    user: User = Depends(get_current_profile),
+    db: Session = Depends(get_db)
+):
+    # Проверка текущего пароля
+    if not check_password_hash(user.hashed_password, password):
+        raise HTTPException(status_code=400, detail="Неверный пароль")
+    
+    # Обновление данных
+    user.full_name = full_name
+    user.phone_number = phone_number
+    user.date_of_birth = date_of_birth
+    db.commit()
+    return {"message": "Личные данные обновлены"}

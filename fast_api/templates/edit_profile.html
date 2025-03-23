@@ -4,6 +4,29 @@
 <div class="edit-profile-container">
     <h2>Редактирование профиля</h2>
     
+    <!-- Новая форма для личных данных -->
+    <form id="edit-personal-info-form" class="edit-form">
+        <h3>Редактировать личные данные</h3>
+        <div class="form-group">
+            <label for="full-name">ФИО:</label>
+            <input type="text" id="full-name" name="full_name" value="{{ user.full_name }}" required>
+        </div>
+        <div class="form-group">
+            <label for="phone-number">Номер телефона:</label>
+            <input type="text" id="phone-number" name="phone_number" value="{{ user.phone_number }}" required>
+        </div>
+        <div class="form-group">
+            <label for="date-of-birth">Дата рождения:</label>
+            <input type="date" id="date-of-birth" name="date_of_birth" value="{{ user.date_of_birth }}" required>
+        </div>
+        <div class="form-group">
+            <label for="password-personal">Текущий пароль:</label>
+            <input type="password" id="password-personal" name="password" required>
+        </div>
+        <button type="submit" class="submit-btn">Сохранить изменения</button>
+    </form>
+
+    <!-- Существующая форма для email -->
     <form id="edit-email-form" class="edit-form">
         <h3>Изменить Email</h3>
         <div class="form-group">
@@ -17,6 +40,7 @@
         <button type="submit" class="submit-btn">Изменить Email</button>
     </form>
 
+    <!-- Существующая форма для пароля -->
     <form id="edit-password-form" class="edit-form">
         <h3>Изменить Пароль</h3>
         <div class="form-group">
@@ -36,6 +60,41 @@
 </div>
 
 <script>
+    // Обработчик для редактирования личных данных
+    document.getElementById("edit-personal-info-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = {
+            full_name: formData.get("full_name"),
+            phone_number: formData.get("phone_number"),
+            date_of_birth: formData.get("date_of_birth"),
+            password: formData.get("password")
+        };
+
+        try {
+            const response = await fetch("/edit-profile/personal-info", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("access_token")}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert("Личные данные успешно обновлены!");
+                window.location.href = "/profile";
+            } else {
+                const errorData = await response.json();
+                alert(`Ошибка: ${errorData.detail}`);
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Произошла ошибка при обновлении личных данных.");
+        }
+    });
+
+    // Обработчик для изменения email (без изменений)
     document.getElementById("edit-email-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -67,6 +126,7 @@
         }
     });
 
+    // Обработчик для изменения пароля (без изменений)
     document.getElementById("edit-password-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -74,9 +134,9 @@
         const confirmPassword = formData.get("confirm_password");
 
         if (newPassword !== confirmPassword) {
-        alert("Пароли не совпадают!");
-        return;
-         }
+            alert("Пароли не совпадают!");
+            return;
+        }
         const data = {
             current_password: formData.get("current_password"),
             new_password: formData.get("new_password"),

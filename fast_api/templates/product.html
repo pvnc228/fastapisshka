@@ -27,8 +27,11 @@
     <h3>Отзывы</h3>
     <div class="reviews-list">
         {% for review in product.reviews %}
-        <div class="review">
-            <div class="review-author">{{ review.author }}</div>
+        <div class="review-card">
+            <div class="review-header">
+                <div class="review-author">{{ review.author }}</div>
+                <div class="review-date">{{ review.date }}</div>
+            </div>
             <div class="review-text">{{ review.text }}</div>
         </div>
         {% else %}
