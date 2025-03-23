@@ -13,7 +13,7 @@ from models import Review, User, Product, Cart
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 from sqlalchemy import or_
-
+from typing import List
 Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 app = FastAPI()
@@ -109,7 +109,8 @@ async def catalog(
     return templates.TemplateResponse("page1.html", {
         "request": request,
         "title": "Каталог услуг",
-        "products": products  # Передаем список продуктов
+        "products": products,
+        "show_slider": False 
     })
 
 @app.get("/contacts")
@@ -203,9 +204,11 @@ async def login(
 
     if not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Неверный пароль")
-
+    
     access_token = create_access_token(data={"sub": user.email})
-    response = RedirectResponse("/", status_code=303)
+    redirect_url = "/admin" if user.role == "admin" else "/"
+    
+    response = RedirectResponse(redirect_url, status_code=303)
     response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="Lax")
     return response
 
@@ -500,3 +503,194 @@ async def submit_review(
 
     # Перенаправляем пользователя обратно на страницу товара
     return RedirectResponse(url=f"/catalog/{product_id}", status_code=303)
+
+# CRUD для корзин
+@app.post("/admin/add-cart")
+async def add_cart(
+    user_id: int = Form(...),
+    product_id: int = Form(...),
+    quantity: int = Form(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    new_cart = Cart(
+        user_id=user_id,
+        product_id=product_id,
+        quantity=quantity
+    )
+    db.add(new_cart)
+    db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+@app.post("/admin/edit-cart/{cart_id}")
+async def edit_cart(
+    cart_id: int,
+    quantity: int = Form(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    cart = db.query(Cart).filter(Cart.id == cart_id).first()
+    if not cart:
+        raise HTTPException(status_code=404, detail="Запись корзины не найдена")
+    cart.quantity = quantity
+    db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+# CRUD для отзывов
+@app.post("/admin/add-review")
+async def add_review(
+    author: str = Form(...),
+    product_id: int = Form(...),
+    text: str = Form(...),
+    rating: int = Form(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    new_review = Review(
+        author=author,
+        product_id=product_id,
+        text=text,
+        rating=rating
+    )
+    db.add(new_review)
+    db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+@app.post("/admin/edit-review/{review_id}")
+async def edit_review(
+    review_id: int,
+    text: str = Form(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Отзыв не найден")
+    review.text = text
+    db.commit()
+    return RedirectResponse("/admin", status_code=303)
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_panel(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Проверка роли пользователя
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    
+    # Получение данных из базы
+    users = db.query(User).all()
+    products = db.query(Product).all()
+    carts = db.query(Cart).all()
+    reviews = db.query(Review).all()
+
+    # Возвращаем шаблон с данными
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "users": users,
+        "products": products,
+        "carts": carts,
+        "reviews": reviews
+    })
+
+# Удаление пользователя
+@app.post("/admin/delete-user/{user_id}")
+async def delete_user(
+    user_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Проверка роли пользователя
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    
+    # Поиск пользователя
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    # Удаление пользователя
+    db.delete(db_user)
+    db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+# Сброс пароля пользователя
+@app.post("/admin/reset-password/{user_id}")
+async def reset_password(
+    user_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Проверка роли пользователя
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    
+    # Поиск пользователя
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    # Сброс пароля
+    db_user.hashed_password = hash_password("0000")
+    db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+# Удаление продукта
+@app.post("/admin/delete-product/{product_id}")
+async def delete_product(
+    product_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Проверка роли пользователя
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    
+    # Поиск продукта
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Продукт не найден")
+    
+    # Удаление продукта
+    db.delete(product)
+    db.commit()
+    return RedirectResponse("/admin", status_code=303)
+@app.post("/admin/edit-product/{product_id}")
+async def edit_product(
+    product_id: int,
+    name: str = Form(...),
+    category: str = Form(...),
+    price: float = Form(...),
+    description: str = Form(None),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # 1. Проверка прав доступа
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    
+    # 2. Поиск продукта в базе данных
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Продукт не найден")
+    
+    # 3. Обновление данных продукта
+    product.name = name
+    product.category = category
+    product.price = price
+    product.description = description
+    
+    # 4. Сохранение изменений в базе данных
+    db.commit()
+    
+    # 5. Перенаправление обратно на админ-панель
+    return RedirectResponse("/admin", status_code=303)

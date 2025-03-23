@@ -1081,3 +1081,55 @@ button:hover {
     background-color: #3700b3;
 }
 /* Стили для слайдера в топ-меню */
+
+.admin-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+}
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.admin-table th, 
+.admin-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+.admin-table th {
+    background-color: #ff9100d2;
+    color: white;
+}
+.admin-actions {
+    display: flex;
+    gap: 5px;
+}
+.admin-btn {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: white;
+}
+.btn-delete {
+    background: #ff4444;
+}
+.btn-reset {
+    background: #007bff;
+}
+.nav-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.nav-tab {
+    padding: 10px 20px;
+    background: #ff9100d2;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+}

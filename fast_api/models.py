@@ -25,6 +25,7 @@ class User(Base):
     full_name = Column(String, nullable=True)  
     phone_number = Column(String, nullable=True) 
     date_of_birth = Column(Date, nullable=True)  
+    role = Column(String, default="user")
     cart = relationship("Cart", back_populates="user")
     reviews = relationship("Review", back_populates="user")
     
