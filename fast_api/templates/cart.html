@@ -12,29 +12,52 @@
 <script>
     async function updateCart() {
         const response = await fetch('/_cart_items', {
-            credentials: 'include'  
+            credentials: 'include'
         });
         const html = await response.text();
         document.getElementById('cart-content').innerHTML = html;
     }
-    
+
     document.getElementById('cart-content').addEventListener('click', async (e) => {
+        const productName = e.target.dataset.productName;
+
         if (e.target.classList.contains('remove-from-cart-btn')) {
-            const productName = e.target.dataset.productName;
-            
             try {
                 const response = await fetch(`/cart/remove/${encodeURIComponent(productName)}`, {
                     method: 'POST',
-                    credentials: 'include'  
+                    credentials: 'include'
                 });
-    
                 if (response.ok) {
-                    await updateCart();  
+                    await updateCart();
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        } else if (e.target.classList.contains('increase-btn')) {
+            try {
+                const response = await fetch(`/cart/increase/${encodeURIComponent(productName)}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    await updateCart();
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        } else if (e.target.classList.contains('decrease-btn')) {
+            try {
+                const response = await fetch(`/cart/decrease/${encodeURIComponent(productName)}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    await updateCart();
                 }
             } catch (error) {
                 console.error('Ошибка:', error);
             }
         }
     });
-    </script>
+</script>
 {% endblock %}

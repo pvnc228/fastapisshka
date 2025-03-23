@@ -357,6 +357,46 @@ async def remove_from_cart(
     else:
         raise HTTPException(status_code=404, detail="Продукт не найден в корзине")
 
+
+@app.post("/cart/increase/{product_name}")
+async def increase_quantity(
+    product_name: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    cart_item = db.query(Cart).filter(
+        Cart.user_id == user.id,
+        Cart.products_name == product_name
+    ).first()
+    if cart_item:
+        cart_item.quantity += 1
+        db.commit()
+        return {"message": "Количество увеличено"}
+    else:
+        raise HTTPException(status_code=404, detail="Товар не найден в корзине")
+
+@app.post("/cart/decrease/{product_name}")
+async def decrease_quantity(
+    product_name: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    cart_item = db.query(Cart).filter(
+        Cart.user_id == user.id,
+        Cart.products_name == product_name
+    ).first()
+    if cart_item:
+        if cart_item.quantity > 1:
+            cart_item.quantity -= 1
+            db.commit()
+            return {"message": "Количество уменьшено"}
+        else:
+            db.delete(cart_item)
+            db.commit()
+            return {"message": "Товар удален из корзины"}
+    else:
+        raise HTTPException(status_code=404, detail="Товар не найден в корзине")
+
 @app.get("/cart")
 async def view_cart(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     cart_items = db.query(Cart).join(Product).filter(Cart.user_id == user.id).all()
@@ -367,14 +407,7 @@ async def view_cart(request: Request, user: User = Depends(get_current_user), db
         "show_slider": False 
     })
 
-@app.get("/debug/users", response_class=HTMLResponse)
-async def debug_users(request: Request, db: Session = Depends(get_db)):
-    users = db.query(User).all()
-    return templates.TemplateResponse("debug_users.html", {
-        "request": request,
-        "users": users,
-        "show_slider": False 
-    })
+
 
 @app.post("/edit-profile/email")
 async def edit_email(
@@ -433,14 +466,7 @@ async def get_cart_items(
         "show_slider": False 
     })
 
-@app.post("/debug/delete-users")
-async def delete_all_users_except_current(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    db.query(User).filter(User.id != user.id).delete()
-    db.commit()
-    return {"message": "Все пользователи, кроме активного, удалены."}
+
 @app.post("/reviews/add")
 async def add_review(
     product_id: int = Form(...),
@@ -546,7 +572,6 @@ async def add_review(
     author: str = Form(...),
     product_id: int = Form(...),
     text: str = Form(...),
-    rating: int = Form(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -556,7 +581,6 @@ async def add_review(
         author=author,
         product_id=product_id,
         text=text,
-        rating=rating
     )
     db.add(new_review)
     db.commit()
@@ -693,4 +717,47 @@ async def edit_product(
     db.commit()
     
     # 5. Перенаправление обратно на админ-панель
+    return RedirectResponse("/admin", status_code=303)
+@app.post("/admin/add-product")
+async def add_product(
+    name: str = Form(...),
+    category: str = Form(...),
+    price: float = Form(...),
+    description: str = Form(None),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    new_product = Product(name=name, category=category, price=price, description=description)
+    db.add(new_product)
+    db.commit()
+    return RedirectResponse("/admin", status_code=303)
+@app.post("/admin/delete-cart/{cart_id}")
+async def delete_cart(
+    cart_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    cart = db.query(Cart).filter(Cart.id == cart_id).first()
+    if not cart:
+        raise HTTPException(status_code=404, detail="Корзина не найдена")
+    db.delete(cart)
+    db.commit()
+    return RedirectResponse("/admin", status_code=303)
+@app.post("/admin/delete-review/{review_id}")
+async def delete_review(
+    review_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Отзыв не найден")
+    db.delete(review)
+    db.commit()
     return RedirectResponse("/admin", status_code=303)

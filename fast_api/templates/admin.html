@@ -66,7 +66,13 @@
                 <td>{{ product.category }}</td>
                 <td>{{ product.price }} руб.</td>
                 <td class="admin-actions">
-                    <a href="/admin/edit-product/{{ product.id }}" class="admin-btn btn-reset">Изменить</a>
+                    <button class="admin-btn btn-reset"
+                            data-id="{{ product.id }}"
+                            data-name="{{ product.name | escape }}"
+                            data-category="{{ product.category | escape }}"
+                            data-price="{{ product.price }}"
+                            data-description="{{ product.description | default('') | escape }}"
+                            onclick="editProduct(this)">Изменить</button>
                     <form action="/admin/delete-product/{{ product.id }}" method="POST">
                         <button type="submit" class="admin-btn btn-delete">Удалить</button>
                     </form>
@@ -95,6 +101,10 @@
                 <td>{{ cart.product.name }}</td>
                 <td>{{ cart.quantity }}</td>
                 <td class="admin-actions">
+                    <button class="admin-btn btn-reset"
+                            data-id="{{ cart.id }}"
+                            data-quantity="{{ cart.quantity }}"
+                            onclick="editCart(this)">Изменить</button>
                     <form action="/admin/delete-cart/{{ cart.id }}" method="POST">
                         <button type="submit" class="admin-btn btn-delete">Удалить</button>
                     </form>
@@ -125,6 +135,10 @@
                 <td>{{ review.product.name }}</td>
                 <td>{{ review.created_at }}</td>
                 <td class="admin-actions">
+                    <button class="admin-btn btn-reset"
+                            data-id="{{ review.id }}"
+                            data-text="{{ review.text | escape }}"
+                            onclick="editReview(this)">Изменить</button>
                     <form action="/admin/delete-review/{{ review.id }}" method="POST">
                         <button type="submit" class="admin-btn btn-delete">Удалить</button>
                     </form>
@@ -133,148 +147,215 @@
             {% endfor %}
         </tbody>
     </table>
-</div>
-<div id="add-cart-form" style="display: none;">
-    <h2>Добавить в корзину</h2>
-    <form action="/admin/add-cart" method="POST">
-        <div class="form-group">
-            <label>Пользователь:</label>
-            <select name="user_id" required>
-                {% for user in users %}
-                <option value="{{ user.id }}">{{ user.email }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Продукт:</label>
-            <select name="product_id" required>
-                {% for product in products %}
-                <option value="{{ product.id }}">{{ product.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Количество:</label>
-            <input type="number" name="quantity" min="1" required>
-        </div>
-        <button type="submit" class="admin-btn btn-reset">Добавить</button>
-    </form>
-</div>
 
-<form id="editProductForm" method="POST">
-    <div class="form-group">
-        <label>Название:</label>
-        <input type="text" name="name" id="editProductName" required>
+    <!-- Форма добавления пользователя -->
+    <div id="add-user-form" style="display: none;">
+        <h2>Добавить пользователя</h2>
+        <form action="/register" method="POST">
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label>Пароль:</label>
+                <input type="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label>Имя:</label>
+                <input type="text" name="full_name">
+            </div>
+            <div class="form-group">
+                <label>Телефон:</label>
+                <input type="text" name="phone_number">
+            </div>
+            <div class="form-group">
+                <label>Дата рождения:</label>
+                <input type="date" name="date_of_birth">
+            </div>
+            <button type="submit" class="admin-btn btn-reset">Добавить</button>
+        </form>
     </div>
-    <div class="form-group">
-        <label>Категория:</label>
-        <input type="text" name="category" id="editProductCategory" required>
+
+    <!-- Форма добавления продукта -->
+    <div id="add-product-form" style="display: none;">
+        <h2>Добавить продукт</h2>
+        <form action="/admin/add-product" method="POST">
+            <div class="form-group">
+                <label>Название:</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>Категория:</label>
+                <input type="text" name="category" required>
+            </div>
+            <div class="form-group">
+                <label>Цена:</label>
+                <input type="number" step="0.01" name="price" required>
+            </div>
+            <div class="form-group">
+                <label>Описание:</label>
+                <textarea name="description"></textarea>
+            </div>
+            <button type="submit" class="admin-btn btn-reset">Добавить</button>
+        </form>
     </div>
-    <div class="form-group">
-        <label>Цена:</label>
-        <input type="number" step="0.01" name="price" id="editProductPrice" required>
+
+    <!-- Форма редактирования продукта -->
+    <div id="edit-product-form" style="display: none;">
+        <h2>Редактировать продукт</h2>
+        <form id="editProductForm" method="POST">
+            <div class="form-group">
+                <label>Название:</label>
+                <input type="text" name="name" id="editProductName" required>
+            </div>
+            <div class="form-group">
+                <label>Категория:</label>
+                <input type="text" name="category" id="editProductCategory" required>
+            </div>
+            <div class="form-group">
+                <label>Цена:</label>
+                <input type="number" step="0.01" name="price" id="editProductPrice" required>
+            </div>
+            <div class="form-group">
+                <label>Описание:</label>
+                <textarea name="description" id="editProductDescription"></textarea>
+            </div>
+            <button type="submit" class="admin-btn btn-reset">Сохранить</button>
+        </form>
     </div>
-    <div class="form-group">
-        <label>Описание:</label>
-        <textarea name="description" id="editProductDescription"></textarea>
+
+    <!-- Форма редактирования корзины -->
+    <div id="edit-cart-form" style="display: none;">
+        <h2>Редактировать корзину</h2>
+        <form id="editCartForm" method="POST">
+            <div class="form-group">
+                <label>Количество:</label>
+                <input type="number" name="quantity" id="editCartQuantity" min="1" required>
+            </div>
+            <button type="submit" class="admin-btn btn-reset">Сохранить</button>
+        </form>
     </div>
-    <button type="submit" class="admin-btn btn-reset">Сохранить</button>
-</form>
-<!-- Форма редактирования корзины -->
-<div id="edit-cart-form" style="display: none;">
-    <h2>Редактировать корзину</h2>
-    <form id="editCartForm" method="POST">
-        <div class="form-group">
-            <label>Количество:</label>
-            <input type="number" name="quantity" id="editCartQuantity" min="1" required>
-        </div>
-        <button type="submit" class="admin-btn btn-reset">Сохранить</button>
-    </form>
-</div>
 
-<!-- Форма добавления отзыва -->
-<div id="add-review-form" style="display: none;">
-    <h2>Добавить отзыв</h2>
-    <form action="/admin/add-review" method="POST">
-        <div class="form-group">
-            <label>Автор:</label>
-            <input type="text" name="author" required>
-        </div>
-        <div class="form-group">
-            <label>Продукт:</label>
-            <select name="product_id" required>
-                {% for product in products %}
-                <option value="{{ product.id }}">{{ product.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Текст:</label>
-            <textarea name="text" required></textarea>
-        </div>
-        <div class="form-group">
-            <label>Оценка (1-5):</label>
-            <input type="number" name="rating" min="1" max="5" required>
-        </div>
-        <button type="submit" class="admin-btn btn-reset">Добавить</button>
-    </form>
-</div>
+    <!-- Форма редактирования отзыва -->
+    <div id="edit-review-form" style="display: none;">
+        <h2>Редактировать отзыв</h2>
+        <form id="editReviewForm" method="POST">
+            <div class="form-group">
+                <label>Текст:</label>
+                <textarea name="text" id="editReviewText" required></textarea>
+            </div>
+            <button type="submit" class="admin-btn btn-reset">Сохранить</button>
+        </form>
+    </div>
 
-<!-- Форма редактирования отзыва -->
-<div id="edit-review-form" style="display: none;">
-    <h2>Редактировать отзыв</h2>
-    <form id="editReviewForm" method="POST">
-        <div class="form-group">
-            <label>Текст:</label>
-            <textarea name="text" id="editReviewText" required></textarea>
-        </div>
-        <div class="form-group">
-            <label>Оценка (1-5):</label>
-            <input type="number" name="rating" id="editReviewRating" min="1" max="5" required>
-        </div>
-        <button type="submit" class="admin-btn btn-reset">Сохранить</button>
-    </form>
-</div>
+    <!-- Форма добавления в корзину -->
+    <div id="add-cart-form" style="display: none;">
+        <h2>Добавить в корзину</h2>
+        <form action="/admin/add-cart" method="POST">
+            <div class="form-group">
+                <label>Пользователь:</label>
+                <select name="user_id" required>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.email }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Продукт:</label>
+                <select name="product_id" required>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Количество:</label>
+                <input type="number" name="quantity" min="1" required>
+            </div>
+            <button type="submit" class="admin-btn btn-reset">Добавить</button>
+        </form>
+    </div>
 
-<!-- Добавить кнопки управления -->
-<div class="admin-controls">
-    <button onclick="toggleForm('add-user-form')" class="admin-btn btn-reset">Добавить пользователя</button>
-    <button onclick="toggleForm('add-product-form')" class="admin-btn btn-reset">Добавить продукт</button>
-    <button onclick="toggleForm('add-cart-form')" class="admin-btn btn-reset">Добавить в корзину</button>
-    <button onclick="toggleForm('add-review-form')" class="admin-btn btn-reset">Добавить отзыв</button>
-</div>
+    <!-- Форма добавления отзыва -->
+    <div id="add-review-form" style="display: none;">
+        <h2>Добавить отзыв</h2>
+        <form action="/admin/add-review" method="POST">
+            <div class="form-group">
+                <label>Автор:</label>
+                <input type="text" name="author" required>
+            </div>
+            <div class="form-group">
+                <label>Продукт:</label>
+                <select name="product_id" required>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Текст:</label>
+                <textarea name="text" required></textarea>
+            </div>
+            <button type="submit" class="admin-btn btn-reset">Добавить</button>
+        </form>
+    </div>
 
+    <!-- Кнопки управления -->
+    <div class="admin-controls">
+        <button onclick="toggleForm('add-user-form')" class="admin-btn btn-reset">Добавить пользователя</button>
+        <button onclick="toggleForm('add-product-form')" class="admin-btn btn-reset">Добавить продукт</button>
+        <button onclick="toggleForm('add-cart-form')" class="admin-btn btn-reset">Добавить в корзину</button>
+        <button onclick="toggleForm('add-review-form')" class="admin-btn btn-reset">Добавить отзыв</button>
+    </div>
+</div>
 
 <script>
     function showTable(tableName) {
         document.querySelectorAll('.admin-table').forEach(t => t.style.display = 'none');
         document.getElementById(`${tableName}-table`).style.display = 'table';
     }
-    showTable('users');// Добавить функции для редактирования
-function editCart(cart) {
-    document.getElementById('editCartQuantity').value = cart.quantity;
-    document.getElementById('editCartForm').action = `/admin/edit-cart/${cart.id}`;
-    toggleForm('edit-cart-form');
-}
+    showTable('users');
 
-    function editReview(review) {
-    document.getElementById('editReviewText').value = review.text;
-    document.getElementById('editReviewRating').value = review.rating;
-    document.getElementById('editReviewForm').action = `/admin/edit-review/${review.id}`;
-    toggleForm('edit-review-form');}
+    function toggleForm(formId) {
+        const form = document.getElementById(formId);
+        if (form.style.display === 'none' || form.style.display === '') {
+            form.style.display = 'block';
+        } else {
+            form.style.display = 'none';
+        }
+    }
 
-    function editProduct(product) {
-    // Заполняем форму текущими данными продукта
-    document.getElementById('editProductName').value = product.name;
-    document.getElementById('editProductCategory').value = product.category;
-    document.getElementById('editProductPrice').value = product.price;
-    document.getElementById('editProductDescription').value = product.description;
+    function editProduct(button) {
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
+        const category = button.getAttribute('data-category');
+        const price = button.getAttribute('data-price');
+        const description = button.getAttribute('data-description');
 
-    // Устанавливаем action для формы
-    document.getElementById('editProductForm').action = `/admin/edit-product/${product.id}`;
+        document.getElementById('editProductName').value = name;
+        document.getElementById('editProductCategory').value = category;
+        document.getElementById('editProductPrice').value = price;
+        document.getElementById('editProductDescription').value = description;
+        document.getElementById('editProductForm').action = `/admin/edit-product/${id}`;
+        toggleForm('edit-product-form');
+    }
 
-    // Отображаем форму редактирования
-    toggleForm('edit-product-form');
-}
+    function editCart(button) {
+        const id = button.getAttribute('data-id');
+        const quantity = button.getAttribute('data-quantity');
+
+        document.getElementById('editCartQuantity').value = quantity;
+        document.getElementById('editCartForm').action = `/admin/edit-cart/${id}`;
+        toggleForm('edit-cart-form');
+    }
+
+    function editReview(button) {
+        const id = button.getAttribute('data-id');
+        const text = button.getAttribute('data-text');
+
+        document.getElementById('editReviewText').value = text;
+        document.getElementById('editReviewForm').action = `/admin/edit-review/${id}`;
+        toggleForm('edit-review-form');
+    }
 </script>
 {% endblock %}
