@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from database import engine, Base, SessionLocal
-from schemas import UserCreate, UserResponse, Token, EditEmailRequest, EditPasswordRequest
+from schemas import EditProfileRequest, UserCreate, UserResponse, Token, EditEmailRequest, EditPasswordRequest
 from auth import get_db, router as auth_router
 from utils import SECRET_KEY, ALGORITHM, verify_password, create_access_token, hash_password
 from models import Review, User, Product, Cart
@@ -475,22 +475,31 @@ async def product_page(
     product_id: int,
     db: Session = Depends(get_db)
 ):
-    product = db.query(Product).filter(Product.id == product_id).first()
+    # Загружаем продукт и связанные с ним отзывы
+    product = db.query(Product).options(joinedload(Product.reviews)).filter(Product.id == product_id).first()
     
     if not product:
         raise HTTPException(status_code=404, detail="Товар не найден")
 
+    # Передаем продукт и отзывы в шаблон
     return templates.TemplateResponse("product.html", {
         "request": request,
         "product": product,
+        "reviews": product.reviews,  # Передаем отзывы в шаблон
         "show_slider": False 
     })
 @app.post("/submit-review")
 async def submit_review(
     request: Request,
-    product_id: int = Form(...),  
-    author: str = Form(...),     
-    text: str = Form(...),        
+    product_id: int = Form(...),
+    author: str = Form(...),
+    title: str = Form(...),
+    text: str = Form(...),
+    rating: int = Form(...),
+    review_type: str = Form(...),
+    is_anonymous: bool = Form(False),
+    agreement: bool = Form(...),
+    scrollable_text: str = Form(None),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -502,7 +511,13 @@ async def submit_review(
         user_id=user.id,
         product_id=product_id,
         author=author,
-        text=text
+        title=title,
+        text=text,
+        rating=rating,
+        review_type=review_type,
+        is_anonymous=is_anonymous,
+        agreement=agreement,
+        scrollable_text=scrollable_text
     )
 
     db.add(new_review)
@@ -656,8 +671,21 @@ async def edit_product(
     product_id: int,
     name: str = Form(...),
     category: str = Form(...),
-    price: float = Form(...),
+    price: int = Form(...),
     description: str = Form(None),
+    insurance_type: str = Form(None),
+    image_url: str = Form(None),
+    max_car_age: int = Form(None),
+    insurance_amount: int = Form(None),
+    insurance_duration: str = Form(None),
+    policy_cost: int = Form(None),
+    risks: str = Form(None),
+    payment_conditions: str = Form(None),
+    client_service_24_7: bool = Form(False),
+    emergency_commissioner: bool = Form(False),
+    tow_truck: bool = Form(False),
+    compensation_form: str = Form(None),
+    payout_without_certificates: bool = Form(False),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -668,24 +696,72 @@ async def edit_product(
     if not product:
         raise HTTPException(status_code=404, detail="Продукт не найден")
     
+    # Обновляем все поля
     product.name = name
     product.category = category
     product.price = price
     product.description = description
+    product.insurance_type = insurance_type
+    product.image_url = image_url
+    product.max_car_age = max_car_age
+    product.insurance_amount = insurance_amount
+    product.insurance_duration = insurance_duration
+    product.policy_cost = policy_cost
+    product.risks = risks
+    product.payment_conditions = payment_conditions
+    product.client_service_24_7 = client_service_24_7
+    product.emergency_commissioner = emergency_commissioner
+    product.tow_truck = tow_truck
+    product.compensation_form = compensation_form
+    product.payout_without_certificates = payout_without_certificates
+    
     db.commit()
     return RedirectResponse("/admin", status_code=303)
 @app.post("/admin/add-product")
 async def add_product(
     name: str = Form(...),
     category: str = Form(...),
-    price: float = Form(...),
+    price: int = Form(...),
     description: str = Form(None),
+    insurance_type: str = Form(None),
+    image_url: str = Form(None),
+    max_car_age: int = Form(None),
+    insurance_amount: int = Form(None),
+    insurance_duration: str = Form(None),
+    policy_cost: int = Form(None),
+    risks: str = Form(None),
+    payment_conditions: str = Form(None),
+    client_service_24_7: bool = Form(False),
+    emergency_commissioner: bool = Form(False),
+    tow_truck: bool = Form(False),
+    compensation_form: str = Form(None),
+    payout_without_certificates: bool = Form(False),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Доступ запрещен")
-    new_product = Product(name=name, category=category, price=price, description=description)
+    
+    new_product = Product(
+        name=name,
+        category=category,
+        price=price,
+        description=description,
+        insurance_type=insurance_type,
+        image_url=image_url,
+        max_car_age=max_car_age,
+        insurance_amount=insurance_amount,
+        insurance_duration=insurance_duration,
+        policy_cost=policy_cost,
+        risks=risks,
+        payment_conditions=payment_conditions,
+        client_service_24_7=client_service_24_7,
+        emergency_commissioner=emergency_commissioner,
+        tow_truck=tow_truck,
+        compensation_form=compensation_form,
+        payout_without_certificates=payout_without_certificates
+    )
+    
     db.add(new_product)
     db.commit()
     return RedirectResponse("/admin", status_code=303)
@@ -719,22 +795,17 @@ async def delete_review(
     return RedirectResponse("/admin", status_code=303)
 
 
-@app.post("/edit-profile/personal-info")
-async def edit_personal_info(
-    full_name: str = Form(...),
-    phone_number: str = Form(...),
-    date_of_birth: str = Form(...),
-    password: str = Form(...),
-    user: User = Depends(get_current_profile),
+@app.post("/edit-profile/info")
+async def edit_profile_info(
+    request: EditProfileRequest,
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Проверка текущего пароля
-    if not check_password_hash(user.hashed_password, password):
-        raise HTTPException(status_code=400, detail="Неверный пароль")
-    
-    # Обновление данных
-    user.full_name = full_name
-    user.phone_number = phone_number
-    user.date_of_birth = date_of_birth
+    user.full_name = request.full_name
+    user.phone_number = request.phone_number
+    user.date_of_birth = request.date_of_birth
+
     db.commit()
-    return {"message": "Личные данные обновлены"}
+    db.refresh(user)
+
+    return JSONResponse(content={"message": "Профиль успешно обновлен"}, status_code=200)

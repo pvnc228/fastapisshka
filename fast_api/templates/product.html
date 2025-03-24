@@ -29,15 +29,57 @@
         {% for review in product.reviews %}
         <div class="review-card">
             <div class="review-header">
-                <div class="review-author">{{ review.author }}</div>
-                <div class="review-date">{{ review.date }}</div>
+                <div class="review-author">
+                    {% if review.is_anonymous %}
+                        Анонимный пользователь
+                    {% else %}
+                        {{ review.author }}
+                    {% endif %}
+                </div>
+                <div class="review-date">{{ review.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+            </div>
+            <div class="review-title">
+                <strong>{{ review.title }}</strong>
+            </div>
+            <div class="review-rating">
+                Оценка: 
+                
+                ({{ review.rating }}/5)
+            </div>
+            <div class="review-type">
+                Тип отзыва: 
+                <span class="review-type-badge">
+                    {% if review.review_type == "general" %}
+                        Общий
+                    {% elif review.review_type == "quality" %}
+                        Качество
+                    {% elif review.review_type == "service" %}
+                        Сервис
+                    {% else %}
+                        {{ review.review_type }}
+                    {% endif %}
+                </span>
             </div>
             <div class="review-text">{{ review.text }}</div>
+            {% if review.scrollable_text %}
+            <div class="review-additional">
+                <details>
+                    <summary>Дополнительные комментарии</summary>
+                    <div class="scrollable-text">
+                        {{ review.scrollable_text }}
+                    </div>
+                </details>
+            </div>
+            {% endif %}
+            <div class="review-agreement">
+                <small>Пользователь согласен с правилами: {{ '✔' if review.agreement else '✖' }}</small>
+            </div>            
         </div>
         {% else %}
         <p>Отзывов пока нет.</p>
         {% endfor %}
     </div>
+    {% if request.cookies.get("access_token") %}
     <div class="add-review">
         <h4>Добавить отзыв</h4>
         <form class="review-form" action="/submit-review" method="post">
@@ -46,12 +88,68 @@
                 <label for="review-name">Ваше имя:</label>
                 <input type="text" id="review-name" name="author" required>
             </div>
+            
             <div class="form-group">
-                <label for="review-text">Ваш отзыв:</label>
-                <textarea id="review-text" name="text" rows="4" required></textarea>
+                <label>Оценка:</label>
+                <div class="rating-radio">
+                    {% for i in range(1,6) %}
+                    <label>
+                        <input type="radio" name="rating" value="{{ i }}" required>
+                        {{ i }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        
+            <!-- Раскрывающийся список -->
+            <div class="form-group">
+                <label>Тип отзыва:</label>
+                <select name="review_type" required>
+                    <option value="general">Общий</option>
+                    <option value="quality">Качество</option>
+                    <option value="service">Сервис</option>
+                </select>
+            </div>
+        
+            <!-- Однострочное поле -->
+            <div class="form-group">
+                <label>Заголовок:</label>
+                <input type="text" name="title" maxlength="100" required>
+            </div>
+        
+            <!-- Многострочное поле -->
+            <div class="form-group">
+                <label>Текст отзыва:</label>
+                <textarea name="text" rows="4" required></textarea>
+            </div>
+        
+            <!-- Прокручивающееся поле -->
+            <div class="form-group">
+                <label>Дополнительные комментарии:</label>
+                <div class="scrollable-textarea">
+                    <textarea name="scrollable_text" rows="4" style="overflow-y: auto"></textarea>
+                </div>
+            </div>
+        
+            <!-- Флажок -->
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="agreement" required>
+                    Согласен с правилами публикации
+                </label>
+            </div>
+        
+            <!-- Переключатель -->
+            <div class="form-group">
+                <label class="switch">
+                    <input type="checkbox" name="is_anonymous">
+                    <span class="slider"></span>
+                    Анонимный отзыв
+                </label>
             </div>
             <button type="submit" class="submit-btn">Отправить</button>
         </form>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

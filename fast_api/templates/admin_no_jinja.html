@@ -1,6 +1,15 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Административная панель</title>
+    <link rel="stylesheet" href="site_style.css">
+</head>
+<body>
 
-{% block content %}
+
+
 <div class="admin-container">
     <h1>Административная панель</h1>
     
@@ -55,6 +64,19 @@
                 <th>Название</th>
                 <th>Категория</th>
                 <th>Цена</th>
+                <th>Тип страхования</th>
+                <th>Изображение</th>
+                <th>Макс. возраст авто</th>
+                <th>Страховая сумма</th>
+                <th>Срок страхования</th>
+                <th>Стоимость полиса</th>
+                <th>Риски</th>
+                <th>Условия оплаты</th>
+                <th>24/7</th>
+                <th>Комиссар</th>
+                <th>Эвакуатор</th>
+                <th>Форма возмещения</th>
+                <th>Выплата без справок</th>
                 <th>Действия</th>
             </tr>
         </thead>
@@ -65,13 +87,43 @@
                 <td>{{ product.name }}</td>
                 <td>{{ product.category }}</td>
                 <td>{{ product.price }} руб.</td>
+                <td>{{ product.insurance_type }}</td>
+                <td>
+                    {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" style="max-width: 100px;">
+                    {% endif %}
+                </td>
+                <td>{{ product.max_car_age }}</td>
+                <td>{{ product.insurance_amount }}</td>
+                <td>{{ product.insurance_duration }}</td>
+                <td>{{ product.policy_cost }}</td>
+                <td class="truncate-text">{{ product.risks|truncate(30) }}</td>
+                <td>{{ product.payment_conditions }}</td>
+                <td>{{ '✔' if product.client_service_24_7 }}</td>
+                <td>{{ '✔' if product.emergency_commissioner }}</td>
+                <td>{{ '✔' if product.tow_truck }}</td>
+                <td>{{ product.compensation_form }}</td>
+                <td>{{ '✔' if product.payout_without_certificates }}</td>
                 <td class="admin-actions">
-                    <button class="admin-btn btn-reset"
+                    <button class="admin-btn btn-reset" 
                             data-id="{{ product.id }}"
-                            data-name="{{ product.name | escape }}"
-                            data-category="{{ product.category | escape }}"
+                            data-name="{{ product.name }}"
+                            data-category="{{ product.category }}"
                             data-price="{{ product.price }}"
-                            data-description="{{ product.description | default('') | escape }}"
+                            data-description="{{ product.description }}"
+                            data-insurance-type="{{ product.insurance_type }}"
+                            data-image-url="{{ product.image_url }}"
+                            data-max-car-age="{{ product.max_car_age }}"
+                            data-insurance-amount="{{ product.insurance_amount }}"
+                            data-insurance-duration="{{ product.insurance_duration }}"
+                            data-policy-cost="{{ product.policy_cost }}"
+                            data-risks="{{ product.risks }}"
+                            data-payment-conditions="{{ product.payment_conditions }}"
+                            data-client-service-247="{{ product.client_service_24_7 }}"
+                            data-emergency-commissioner="{{ product.emergency_commissioner }}"
+                            data-tow-truck="{{ product.tow_truck }}"
+                            data-compensation-form="{{ product.compensation_form }}"
+                            data-payout-without-certificates="{{ product.payout_without_certificates }}"
                             onclick="editProduct(this)">Изменить</button>
                     <form action="/admin/delete-product/{{ product.id }}" method="POST">
                         <button type="submit" class="admin-btn btn-delete">Удалить</button>
@@ -199,6 +251,68 @@
             <div class="form-group">
                 <label>Описание:</label>
                 <textarea name="description"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Тип страхования:</label>
+                <input type="text" name="insurance_type">
+            </div>
+            <div class="form-group">
+                <label>Ссылка на изображение:</label>
+                <input type="text" name="image_url">
+            </div>
+            <div class="form-group">
+                <label>Макс. возраст авто:</label>
+                <input type="number" name="max_car_age">
+            </div>
+            <div class="form-group">
+                <label>Страховая сумма:</label>
+                <input type="number" name="insurance_amount">
+            </div>
+            <div class="form-group">
+                <label>Срок страхования:</label>
+                <input type="text" name="insurance_duration">
+            </div>
+            <div class="form-group">
+                <label>Стоимость полиса:</label>
+                <input type="number" name="policy_cost">
+            </div>
+            <div class="form-group">
+                <label>Риски:</label>
+                <textarea name="risks"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Условия оплаты:</label>
+                <input type="text" name="payment_conditions">
+            </div>
+            <div class="form-group">
+                <label>Форма возмещения:</label>
+                <input type="text" name="compensation_form">
+            </div>
+            
+            <!-- Чекбоксы -->
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="client_service_24_7">
+                    Сервис 24/7
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="emergency_commissioner">
+                    Аварийный комиссар
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="tow_truck">
+                    Эвакуатор
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="payout_without_certificates">
+                    Выплата без справок
+                </label>
             </div>
             <button type="submit" class="admin-btn btn-reset">Добавить</button>
         </form>
@@ -360,19 +474,33 @@
     }
 
     function editProduct(button) {
-        const id = button.getAttribute('data-id');
-        const name = button.getAttribute('data-name');
-        const category = button.getAttribute('data-category');
-        const price = button.getAttribute('data-price');
-        const description = button.getAttribute('data-description');
+    const dataset = button.dataset;
+    
+    // Заполнение основных полей
+    document.getElementById('editProductName').value = dataset.name;
+    document.getElementById('editProductCategory').value = dataset.category;
+    document.getElementById('editProductPrice').value = dataset.price;
+    
+    // Заполнение дополнительных полей
+    document.getElementById('editProductInsuranceType').value = dataset.insuranceType || '';
+    document.getElementById('editProductImageUrl').value = dataset.imageUrl || '';
+    document.getElementById('editProductMaxCarAge').value = dataset.maxCarAge || '';
+    document.getElementById('editProductInsuranceAmount').value = dataset.insuranceAmount || '';
+    document.getElementById('editProductInsuranceDuration').value = dataset.insuranceDuration || '';
+    document.getElementById('editProductPolicyCost').value = dataset.policyCost || '';
+    document.getElementById('editProductRisks').value = dataset.risks || '';
+    document.getElementById('editProductPaymentConditions').value = dataset.paymentConditions || '';
+    document.getElementById('editProductCompensationForm').value = dataset.compensationForm || '';
 
-        document.getElementById('editProductName').value = name;
-        document.getElementById('editProductCategory').value = category;
-        document.getElementById('editProductPrice').value = price;
-        document.getElementById('editProductDescription').value = description;
-        document.getElementById('editProductForm').action = `/admin/edit-product/${id}`;
-        toggleForm('edit-product-form');
-    }
+    // Заполнение чекбоксов
+    document.getElementById('editProductClientService247').checked = dataset.clientService247 === 'true';
+    document.getElementById('editProductEmergencyCommissioner').checked = dataset.emergencyCommissioner === 'true';
+    document.getElementById('editProductTowTruck').checked = dataset.towTruck === 'true';
+    document.getElementById('editProductPayoutWithoutCertificates').checked = dataset.payoutWithoutCertificates === 'true';
+
+    document.getElementById('editProductForm').action = `/admin/edit-product/${dataset.id}`;
+    toggleForm('edit-product-form');
+}
 
     function editCart(button) {
         const id = button.getAttribute('data-id');
@@ -392,4 +520,6 @@
         toggleForm('edit-review-form');
     }
 </script>
-{% endblock %}
+
+</body>
+</html>

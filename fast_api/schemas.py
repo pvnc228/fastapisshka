@@ -28,3 +28,7 @@ class EditPasswordRequest(BaseModel):
     current_password: str
     new_password: str
     confirm_password: str
+class EditProfileRequest(BaseModel):
+    full_name: str | None = None
+    phone_number: str | None = None
+    date_of_birth: date | None = None

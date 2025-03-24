@@ -1,10 +1,8 @@
-{% extends "base.html" %}
-
-{% block content %}
+<!-- 
 <div class="edit-profile-container">
     <h2>Редактирование профиля</h2>
     
-    <!-- Новая форма для личных данных -->
+     Новая форма для личных данных 
     <form id="edit-personal-info-form" class="edit-form">
         <h3>Редактировать личные данные</h3>
         <div class="form-group">
@@ -26,7 +24,7 @@
         <button type="submit" class="submit-btn">Сохранить изменения</button>
     </form>
 
-    <!-- Существующая форма для email -->
+  Существующая форма для email 
     <form id="edit-email-form" class="edit-form">
         <h3>Изменить Email</h3>
         <div class="form-group">
@@ -40,7 +38,7 @@
         <button type="submit" class="submit-btn">Изменить Email</button>
     </form>
 
-    <!-- Существующая форма для пароля -->
+   Существующая форма для пароля
     <form id="edit-password-form" class="edit-form">
         <h3>Изменить Пароль</h3>
         <div class="form-group">
@@ -163,6 +161,127 @@
             console.error("Ошибка:", error);
             alert("Произошла ошибка при изменении пароля.");
         }
+    });
+</script>
+ -->
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="edit-profile-container">
+    <h2>Редактирование профиля</h2>
+    
+    <!-- Форма для изменения email -->
+    <form id="edit-email-form" class="edit-form">
+        <h3>Изменить Email</h3>
+        <div class="form-group">
+            <label for="new-email">Новый Email:</label>
+            <input type="email" id="new-email" name="new_email" required>
+        </div>
+        <div class="form-group">
+            <label for="password-email">Текущий пароль:</label>
+            <input type="password" id="password-email" name="password" required>
+        </div>
+        <button type="submit" class="submit-btn">Изменить Email</button>
+    </form>
+
+    <!-- Форма для изменения пароля -->
+    <form id="edit-password-form" class="edit-form">
+        <h3>Изменить Пароль</h3>
+        <div class="form-group">
+            <label for="current-password">Текущий пароль:</label>
+            <input type="password" id="current-password" name="current_password" required>
+        </div>
+        <div class="form-group">
+            <label for="new-password">Новый пароль:</label>
+            <input type="password" id="new-password" name="new_password" required>
+        </div>
+        <div class="form-group">
+            <label for="confirm-password">Подтвердите новый пароль:</label>
+            <input type="password" id="confirm-password" name="confirm_password" required>
+        </div>
+        <button type="submit" class="submit-btn">Изменить Пароль</button>
+    </form>
+
+    <!-- Форма для изменения ФИО, номера и даты рождения -->
+    <form id="edit-profile-form" class="edit-form">
+        <h3>Изменить данные профиля</h3>
+        <div class="form-group">
+            <label for="full_name">ФИО:</label>
+            <input type="text" id="full_name" name="full_name" required>
+        </div>
+        <div class="form-group">
+            <label for="phone_number">Номер телефона (+7...):</label>
+            <input type="tel" id="phone_number" name="phone_number" pattern="\+7[0-9]{10}" placeholder="+7XXXXXXXXXX" required>
+        </div>
+        <div class="form-group">
+            <label for="date_of_birth">Дата рождения:</label>
+            <input type="date" id="date_of_birth" name="date_of_birth" required>
+        </div>
+        <button type="submit" class="submit-btn">Сохранить изменения</button>
+    </form>
+</div>
+
+<script>
+    // Функция для отправки запроса
+    async function sendRequest(url, data) {
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("access_token")}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert("Данные успешно обновлены!");
+                window.location.reload();
+            } else {
+                const errorData = await response.json();
+                alert(`Ошибка: ${errorData.detail}`);
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Произошла ошибка при обновлении данных.");
+        }
+    }
+
+    document.getElementById("edit-email-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        sendRequest("/edit-profile/email", {
+            new_email: formData.get("new_email"),
+            password: formData.get("password")
+        });
+    });
+
+    document.getElementById("edit-password-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const newPassword = formData.get("new_password");
+        const confirmPassword = formData.get("confirm_password");
+
+        if (newPassword !== confirmPassword) {
+            alert("Пароли не совпадают!");
+            return;
+        }
+
+        sendRequest("/edit-profile/password", {
+            current_password: formData.get("current_password"),
+            new_password: newPassword
+        });
+    });
+
+    document.getElementById("edit-profile-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        sendRequest("/edit-profile/info", {
+            full_name: formData.get("full_name"),
+            phone_number: formData.get("phone_number"),
+            date_of_birth: formData.get("date_of_birth")
+        });
     });
 </script>
 {% endblock %}

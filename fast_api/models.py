@@ -58,7 +58,15 @@ class Product(Base):
 class Review(Base):
     __tablename__ = "reviews"
     
+ 
     id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(100))  # Однострочное текстовое поле
+    text = Column(Text, nullable=False)  # Многострочное поле
+    rating = Column(Integer)  # Радиокнопка (1-5)
+    is_anonymous = Column(Boolean, default=False)  # Переключатель
+    agreement = Column(Boolean)  # Флажок
+    review_type = Column(String(20))  # Раскрывающийся список
+    scrollable_text = Column(Text)  # Прокручивающееся поле
     text = Column(Text, nullable=False)
     author = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.now())
