@@ -475,17 +475,20 @@ async def product_page(
     product_id: int,
     db: Session = Depends(get_db)
 ):
-    # Загружаем продукт и связанные с ним отзывы
-    product = db.query(Product).options(joinedload(Product.reviews)).filter(Product.id == product_id).first()
+    # Загружаем продукт
+    product = db.query(Product).filter(Product.id == product_id).first()
     
     if not product:
         raise HTTPException(status_code=404, detail="Товар не найден")
+
+    # Загружаем отзывы отдельно
+    reviews = db.query(Review).filter(Review.product_id == product_id).all()
 
     # Передаем продукт и отзывы в шаблон
     return templates.TemplateResponse("product.html", {
         "request": request,
         "product": product,
-        "reviews": product.reviews,  # Передаем отзывы в шаблон
+        "reviews": reviews,  # Передаем отзывы отдельно
         "show_slider": False 
     })
 @app.post("/submit-review")

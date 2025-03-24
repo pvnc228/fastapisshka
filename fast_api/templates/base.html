@@ -287,6 +287,38 @@
         startAutoSlide();
     }
 }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('review-form');
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault(); // Предотвращаем стандартное поведение формы
+
+            // Собираем данные из формы
+            const formData = new FormData(form);
+
+            try {
+                // Отправляем данные на сервер
+                const response = await fetch('/submit-review', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    // Если запрос успешен, обновляем страницу или показываем сообщение
+                    alert('Отзыв успешно отправлен!');
+                    window.location.reload(); // Перезагружаем страницу
+                } else {
+                    // Если произошла ошибка
+                    alert('Произошла ошибка при отправке отзыва.');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при отправке отзыва.');
+            }
+        });
+    });
+
         // Инициализируем слайдер после загрузки страницы
         
     </script>

@@ -18,7 +18,7 @@
             <li>Эвакуатор: {{ '✔' if product.tow_truck else '✖' }}</li>
             <li>Форма возмещения: {{ product.compensation_form }}</li>
         </ul>
-        <div class="product-price">Цена: {{ product.policy_cost }} руб.</div>
+        <div class="product-price">Цена: {{ product.price }} руб.</div>
         <button class="add-to-cart-btn" data-product-name="{{ product.name }}">Добавить в корзину</button>
     </div>
 </div>
@@ -82,7 +82,7 @@
     {% if request.cookies.get("access_token") %}
     <div class="add-review">
         <h4>Добавить отзыв</h4>
-        <form class="review-form" action="/submit-review" method="post">
+        <form id="review-form" class="review-form" action="/submit-review" method="post">
             <input type="hidden" name="product_id" value="{{ product.id }}">
             <div class="form-group">
                 <label for="review-name">Ваше имя:</label>
@@ -101,7 +101,6 @@
                 </div>
             </div>
         
-            <!-- Раскрывающийся список -->
             <div class="form-group">
                 <label>Тип отзыва:</label>
                 <select name="review_type" required>
@@ -111,19 +110,16 @@
                 </select>
             </div>
         
-            <!-- Однострочное поле -->
             <div class="form-group">
                 <label>Заголовок:</label>
                 <input type="text" name="title" maxlength="100" required>
             </div>
         
-            <!-- Многострочное поле -->
             <div class="form-group">
                 <label>Текст отзыва:</label>
                 <textarea name="text" rows="4" required></textarea>
             </div>
         
-            <!-- Прокручивающееся поле -->
             <div class="form-group">
                 <label>Дополнительные комментарии:</label>
                 <div class="scrollable-textarea">
@@ -131,7 +127,6 @@
                 </div>
             </div>
         
-            <!-- Флажок -->
             <div class="form-group">
                 <label>
                     <input type="checkbox" name="agreement" required>
@@ -139,7 +134,6 @@
                 </label>
             </div>
         
-            <!-- Переключатель -->
             <div class="form-group">
                 <label class="switch">
                     <input type="checkbox" name="is_anonymous">
